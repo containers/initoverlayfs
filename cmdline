@@ -1,0 +1,8 @@
+change:
+
+BOOT_IMAGE=(hd0,gpt2)/vmlinuz-6.3.11-200.fc38.x86_64 root=UUID=fbd07006-6753-4d6f-92b5-9bb39c941f35 ro rhgb quiet
+
+to
+
+BOOT_IMAGE=(hd0,gpt2)/vmlinuz-6.3.11-200.fc38.x86_64 root=/dev/vda3 ro rhgb quiet rootfstype=ext4 rootwait init=/usr/bin/initoverlayfs2init
+

@@ -2,5 +2,5 @@
 
 set -e
 
-gcc -pedantic -Wall -Wextra initoverlayfs2init.c -o initoverlayfs2init
+gcc -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o initoverlayfs2init
 
