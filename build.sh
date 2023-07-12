@@ -10,6 +10,9 @@ extract_initrd_into_initoverlayfs() {
   cd -
 }
 
+epoch=$(date +%s)
+systemd-analyze > systemd-analyze$epoch.txt
+journalctl --output=short-monotonic > journalctl$epoch.txt
 sed -i "s/UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/# UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/g" /etc/fstab
 systemctl daemon-reload
 dracut -f --compress=pigz
