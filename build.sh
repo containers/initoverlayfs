@@ -20,5 +20,7 @@ dracut -f --compress=pigz
 extract_initrd_into_initoverlayfs
 gcc -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o /boot/initoverlayfs/usr/bin/initoverlayfs2init
 sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
-sed -i 's#options root=UUID=2f8957f6-9ecd-480f-b738-41d6da946bf4 ro rhgb quiet#options root=/dev/vda3 ro rhgb quiet rootfstype=ext4 rootwait init=/usr/bin/initoverlayfs2init#g' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
+
+# should be ro rhgb quiet, cannot remount ro, but can fix
+sed -i 's#options root=UUID=2f8957f6-9ecd-480f-b738-41d6da946bf4 ro rhgb quiet#options root=/dev/vda3 rw rhgb quiet rootfstype=ext4 rootwait init=/usr/bin/initoverlayfs2init#g' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
