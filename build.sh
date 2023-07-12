@@ -12,7 +12,7 @@ extract_initrd_into_initoverlayfs() {
 
 sed -i "s/UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/# UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/g" /etc/fstab
 systemctl daemon-reload
-dracut -f
+dracut -f --compress=pigz
 
 extract_initrd_into_initoverlayfs
 gcc -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o /boot/initoverlayfs/usr/bin/initoverlayfs2init
