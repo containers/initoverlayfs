@@ -132,6 +132,8 @@ static int switchroot(const char* newroot) {
       warnx("forcing unmount of %s", umounts[i]);
       umount2(umounts[i], MNT_FORCE);
     }
+
+    printf("succeeeded to mount moving %s to %s", umounts[i], newmount);
   }
 
   if (chdir(newroot)) {
