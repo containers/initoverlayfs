@@ -22,7 +22,7 @@ systemctl daemon-reload
 dracut -f --compress=pigz
 
 extract_initrd_into_initoverlayfs
-gcc -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o /initoverlayfs/usr/sbin/initoverlayfs2init
+gcc -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o /usr/sbin/initoverlayfs2init
 sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
 # should be ro rhgb quiet, cannot remount ro, but can fix
