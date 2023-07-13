@@ -197,6 +197,10 @@ static int pivot_root(const char* new_root, const char* put_old) {
   return syscall(__NR_pivot_root, new_root, put_old);
 }
 
+#ifndef UNLOCK_OVERLAYDIR
+#define UNLOCK_OVERLAYDIR "/var/tmp/initoverlay"
+#endif
+
 static int mount_overlayfs() {
   if (chdir("/") < 0)
     err(1, "chdir");
@@ -212,10 +216,12 @@ static int mount_overlayfs() {
 int main() {
   // mount rw overlayfs /initoverlayfs
   //  const int ret = mount(NULL, "/", NULL, MS_REMOUNT, NULL);
-  const int ret = mount_overlayfs();
-  if (ret) {
-    warn("failed to mount overlayfs: %d", ret);
-    return errno;
+  if (false) {
+    const int ret = mount_overlayfs();
+    if (ret) {
+      warn("failed to mount overlayfs: %d", ret);
+      return errno;
+    }
   }
 
   errno = 0;
