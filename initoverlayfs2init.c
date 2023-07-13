@@ -229,16 +229,18 @@ int main() {
     if (pivot_root("/initoverlayfs", "/")) {
       warn("failed to pivot_root");
     }
-
-    if (errno && switchroot("/initoverlayfs")) {
-      warn("failed to switchroot");
-      return errno;
-    }
   }
 
-  if (chroot("/initoverlayfs")) {
-    warn("failed to chroot");
+  if (switchroot("/initoverlayfs")) {
+    warn("failed to switchroot");
     return errno;
+  }
+
+  if (false) {
+    if (chroot("/initoverlayfs")) {
+      warn("failed to chroot");
+      return errno;
+    }
   }
 
   // to-do parse 2init= karg also possibly
