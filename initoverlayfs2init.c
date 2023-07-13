@@ -218,6 +218,6 @@ int main() {
 
   // If you reach here you have failed, exec should have taken control of this
   // process
-  warn("failed to exec init process: %s");
+  warn("failed to exec init process");
   return errno;
 }
