@@ -224,13 +224,20 @@ int main() {
     }
   }
 
-  errno = 0;
-  if (pivot_root("/initoverlayfs", "/")) {
-    warn("failed to pivot_root");
+  if (false) {
+    errno = 0;
+    if (pivot_root("/initoverlayfs", "/")) {
+      warn("failed to pivot_root");
+    }
+
+    if (errno && switchroot("/initoverlayfs")) {
+      warn("failed to switchroot");
+      return errno;
+    }
   }
 
-  if (errno && switchroot("/initoverlayfs")) {
-    warn("failed to switchroot");
+  if (chroot("/initoverlayfs")) {
+    warn("failed to chroot");
     return errno;
   }
 
