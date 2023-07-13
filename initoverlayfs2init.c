@@ -111,7 +111,6 @@ static int switchroot(const char* newroot) {
     return -1;
   }
 
-if (false) { // fake
   for (i = 0; umounts[i] != NULL; i++) {
     char newmount[PATH_MAX];
 
@@ -136,7 +135,6 @@ if (false) { // fake
 
     printf("succeeeded to mount moving %s to %s", umounts[i], newmount);
   }
-}
 
   if (chdir(newroot)) {
     warn("failed to change directory to %s", newroot);
@@ -150,7 +148,7 @@ if (false) { // fake
   }
 
   if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
-    warn("failed to mount moving %s to /", newroot);
+    warn("failed final mount moving %s to /", newroot);
     goto fail;
   }
 
