@@ -197,17 +197,6 @@ static int pivot_root(const char* new_root, const char* put_old) {
   return syscall(__NR_pivot_root, new_root, put_old);
 }
 
-#ifndef TEMP_FAILURE_RETRY
-#define TEMP_FAILURE_RETRY(expression)         \
-  (__extension__({                             \
-    long int __result;                         \
-    do                                         \
-      __result = (long int)(expression);       \
-    while (__result == -1L && errno == EINTR); \
-    __result;                                  \
-  }))
-#endif
-
 static int mount_overlayfs() {
   if (chdir("/") < 0)
     err(1, "chdir");
