@@ -7,7 +7,7 @@ release=$(uname -r)
 DIR_TO_DUMP_INITRAMFS="/initoverlayfs/"
 
 extract_initrd_into_initoverlayfs() {
-  mkdir "$DIR_TO_DUMP_INITRAMFS"
+  mkdir -p "$DIR_TO_DUMP_INITRAMFS"
   cd "$DIR_TO_DUMP_INITRAMFS"
   /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | cpio -ivd
   cd -

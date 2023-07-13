@@ -190,15 +190,25 @@ static int try_to_run_init_process(const char* init_filename) {
   return execl(init_filename, init_filename, NULL);
 }
 
+static int pivot_root(const char* new_root, const char* put_old) {
+  return syscall(__NR_pivot_root, new_root, put_old);
+}
+
 int main() {
-  static const char* newroot = "/initoverlayfs";
-
   // mount rw overlayfs /initoverlayfs
-  if (mount(NULL, newroot, NULL, MS_REMOUNT | MS_SILENT, NULL))
-    errx(EXIT_FAILURE, "overlayfs mount failed");
+  if (mount(NULL, "/", NULL, MS_REMOUNT, NULL)) {
+    warn("failed to mount overlayfs");
+    return errno;
+  }
 
-  if (switchroot(newroot))
-    errx(EXIT_FAILURE, "switchroot failed");
+  if (pivot_root("/initoverlayfs", "/")) {
+    warn("failed to pivot_root");
+  }
+
+  if (errno && switchroot("/initoverlayfs")) {
+    warn("failed to switchroot");
+    return errno;
+  }
 
   // to-do parse 2init= karg also possibly
   try_to_run_init_process("/sbin/init");
@@ -208,5 +218,6 @@ int main() {
 
   // If you reach here you have failed, exec should have taken control of this
   // process
-  errx(EXIT_FAILURE, "exec of init failed");
+  warn("failed to exec init process: %s");
+  return errno;
 }
