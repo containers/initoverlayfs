@@ -24,7 +24,7 @@ dracut -f --compress=pigz
 extract_initrd_into_initoverlayfs
 
 UNLOCK_OVERLAYDIR="/var/tmp/initoverlay"
-mkdir -p "$UNLOCK_OVERLAYDIR"
+mkdir -p "$UNLOCK_OVERLAYDIR/upper"
 gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o /usr/sbin/initoverlayfs2init
 sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
