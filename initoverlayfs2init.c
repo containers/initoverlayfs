@@ -7,15 +7,16 @@ static int try_to_run_init_process(const char* init_filename) {
 }
 
 int main() {
-  const int ret = mount(NULL, "/", NULL, MS_REMOUNT | MS_SILENT, NULL);
+  if (mount(NULL, "/", NULL, MS_REMOUNT | MS_SILENT, NULL))
+    return errno;
 
   // to-do parse 2init= karg also possibly
-  if (!try_to_run_init_process("/sbin/init") ||
-      !try_to_run_init_process("/etc/init") ||
-      !try_to_run_init_process("/bin/init") ||
-      !try_to_run_init_process("/bin/sh"))
-    return ret;
+  try_to_run_init_process("/sbin/init");
+  try_to_run_init_process("/etc/init");
+  try_to_run_init_process("/bin/init");
+  try_to_run_init_process("/bin/sh");
 
-  // No working init found
+  // If you reach here you have failed, exec should have taken control of this
+  // process
   return errno;
 }
