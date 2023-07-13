@@ -142,7 +142,7 @@ int main() {
 
   if (switchroot("/initoverlayfs")) {
     warn("failed to switchroot");
-    return errno;
+//    return errno;
   }
 
   if (false) {
