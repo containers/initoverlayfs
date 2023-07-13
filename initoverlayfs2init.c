@@ -22,78 +22,6 @@
 #define F_TYPE_EQUAL(a, b) (a == (__SWORD_TYPE)b)
 #endif
 
-static int recursiveRemove(int fd) {
-  struct stat rb;
-  DIR* dir;
-  int rc = -1;
-  int dfd;
-
-  if (!(dir = fdopendir(fd))) {
-    warn("failed to open directory");
-    goto done;
-  }
-
-  /* fdopendir() precludes us from continuing to use the input fd */
-  dfd = dirfd(dir);
-  if (fstat(dfd, &rb)) {
-    warn("stat failed");
-    goto done;
-  }
-
-  while (1) {
-    struct dirent* d;
-    int isdir = 0;
-
-    errno = 0;
-    if (!(d = readdir(dir))) {
-      if (errno) {
-        warn("failed to read directory");
-        goto done;
-      }
-      break; /* end of directory */
-    }
-
-    if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
-      continue;
-#ifdef _DIRENT_HAVE_D_TYPE
-    if (d->d_type == DT_DIR || d->d_type == DT_UNKNOWN)
-#endif
-    {
-      struct stat sb;
-
-      if (fstatat(dfd, d->d_name, &sb, AT_SYMLINK_NOFOLLOW)) {
-        warn("stat of %s failed", d->d_name);
-        continue;
-      }
-
-      /* skip if device is not the same */
-      if (sb.st_dev != rb.st_dev)
-        continue;
-
-      /* remove subdirectories */
-      if (S_ISDIR(sb.st_mode)) {
-        int cfd;
-
-        cfd = openat(dfd, d->d_name, O_RDONLY);
-        if (cfd >= 0)
-          recursiveRemove(cfd); /* it closes cfd too */
-        isdir = 1;
-      }
-    }
-
-    if (unlinkat(dfd, d->d_name, isdir ? AT_REMOVEDIR : 0))
-      warn("failed to unlink %s", d->d_name);
-  }
-
-  rc = 0; /* success */
-done:
-  if (dir)
-    closedir(dir);
-  else
-    close(fd);
-  return rc;
-}
-
 static int switchroot(const char* newroot) {
   /*  Don't try to unmount the old "/", there's no way to do it. */
   const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
@@ -147,10 +75,12 @@ static int switchroot(const char* newroot) {
     goto fail;
   }
 
+if (false) {
   if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
     warn("failed final mount moving %s to /", newroot);
     goto fail;
   }
+}
 
   if (chroot(".")) {
     warn("failed to change root");
@@ -160,29 +90,6 @@ static int switchroot(const char* newroot) {
   if (chdir("/")) {
     warn("cannot change directory to %s", "/");
     goto fail;
-  }
-
-  switch (fork()) {
-    case 0: /* child */
-    {
-      struct statfs stfs;
-
-      if (fstatfs(cfd, &stfs) == 0 &&
-          (F_TYPE_EQUAL(stfs.f_type, STATFS_RAMFS_MAGIC) ||
-           F_TYPE_EQUAL(stfs.f_type, STATFS_TMPFS_MAGIC)))
-        recursiveRemove(cfd);
-      else {
-        warn("old root filesystem is not an initramfs");
-        close(cfd);
-      }
-      exit(EXIT_SUCCESS);
-    }
-    case -1: /* error */
-      break;
-
-    default: /* parent */
-      close(cfd);
-      return 0;
   }
 
 fail:
