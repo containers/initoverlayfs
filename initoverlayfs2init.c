@@ -197,26 +197,6 @@ static int pivot_root(const char* new_root, const char* put_old) {
   return syscall(__NR_pivot_root, new_root, put_old);
 }
 
-bool spawn_check_exit_status(int wait_status) {
-  if (WIFEXITED(wait_status)) {
-    if (WEXITSTATUS(wait_status) != 0) {
-      warn("Child process exited with code %d", WEXITSTATUS(wait_status));
-      return false;
-    }
-  } else if (WIFSIGNALED(wait_status)) {
-    warn("Child process killed by signal %d", WTERMSIG(wait_status));
-    return false;
-  } else if (WIFSTOPPED(wait_status)) {
-    warn("Child process stopped by signal %d", WSTOPSIG(wait_status));
-    return false;
-  } else {
-    warn("Child process exited abnormally");
-    return false;
-  }
-
-  return true;
-}
-
 #define UNLOCK_OVERLAYDIR "/var/tmp/initoverlayfs-unlock-ovl.XXXXXX"
 
 #ifndef TEMP_FAILURE_RETRY
@@ -231,29 +211,13 @@ bool spawn_check_exit_status(int wait_status) {
 #endif
 
 static int mount_overlayfs() {
-  pid_t mount_child = fork();
-  if (mount_child < 0)
-    return 1;
-  else if (mount_child == 0) {
-    /* Child */
-    if (chdir("/") < 0)
-      err(1, "chdir");
+  if (chdir("/") < 0)
+    err(1, "chdir");
 
-    if (mount("overlay", "/initoverlayfs", "overlay", MS_RDONLY,
-              "lowerdir=usr,upperdir=" UNLOCK_OVERLAYDIR
-              "/upper,workdir=" UNLOCK_OVERLAYDIR "/work") < 0)
-      err(1, "mount");
-
-    return 0;
-  } else {
-    /* Parent */
-    int estatus;
-
-    if (TEMP_FAILURE_RETRY(waitpid(mount_child, &estatus, 0)) < 0)
-      return 2;
-    if (!spawn_check_exit_status(estatus))
-      return 3;
-  }
+  if (mount("overlay", "/initoverlayfs", "overlay", MS_RDONLY,
+            "lowerdir=usr,upperdir=" UNLOCK_OVERLAYDIR
+            "/upper,workdir=" UNLOCK_OVERLAYDIR "/work") < 0)
+    err(1, "mount");
 
   return 0;
 }
