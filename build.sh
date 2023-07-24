@@ -21,6 +21,7 @@ sed -i "s/UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/# UUID=2aadcf0d-81dc-4b21-99
 cp mount-sysroot.service /usr/lib/systemd/system/
 sed -i 's#"$systemdsystemunitdir"/initrd-udevadm-cleanup-db.service#"$systemdsystemunitdir"/initrd-udevadm-cleanup-db.service \\ \n        "$systemdsystemunitdir"/mount-sysroot.service#g' /usr/lib/dracut/modules.d/01systemd-initrd/module-setup.sh
 sed -i "s/initrd-udevadm-cleanup-db.service/initrd-udevadm-cleanup-db.service mount-sysroot.service/g" /usr/lib/systemd/system/initrd-switch-root.target
+chcon system_u:object_r:systemd_unit_file_t:s0 /usr/lib/systemd/system/mount-sysroot.service
 systemctl daemon-reload
 dracut -f --compress=pigz
 
