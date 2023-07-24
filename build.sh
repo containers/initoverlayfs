@@ -35,7 +35,7 @@ ln -s ../mount-sysroot.service
 cd -
 fi
 systemctl daemon-reload
-# dracut -f --compress=pigz
+dracut -f --compress=pigz
 
 extract_initrd_into_initoverlayfs
 
