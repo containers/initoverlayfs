@@ -4,7 +4,7 @@ set -ex
 
 release=$(uname -r)
 
-DIR_TO_DUMP_INITRAMFS="/initoverlayfs/"
+DIR_TO_DUMP_INITRAMFS="/boot/initoverlayfs/"
 
 extract_initrd_into_initoverlayfs() {
   mkdir -p "$DIR_TO_DUMP_INITRAMFS"
