@@ -42,6 +42,7 @@ extract_initrd_into_initoverlayfs
 UNLOCK_OVERLAYDIR="/var/tmp/initoverlay"
 mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/initoverlayfs2init
+ln -s /usr/sbin/initoverlayfs2init /usr/sbin/init
 sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
 # should be ro rhgb quiet, cannot remount ro, but can fix
