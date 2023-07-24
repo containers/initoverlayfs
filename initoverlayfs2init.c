@@ -140,10 +140,12 @@ int main() {
     }
   }
 
+if (false) {
   if (switchroot("/initoverlayfs")) {
     warn("failed to switchroot");
 //    return errno;
   }
+}
 
   if (false) {
     if (chroot("/initoverlayfs")) {
