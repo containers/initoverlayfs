@@ -31,6 +31,7 @@ sed -i "s/initrd-udevadm-cleanup-db.service/initrd-udevadm-cleanup-db.service mo
 chcon system_u:object_r:systemd_unit_file_t:s0 /usr/lib/systemd/system/mount-sysroot.service
 cd /usr/lib/systemd/system/sysinit.target.wants/
 ln -s ../mount-sysroot.service
+cd -
 systemctl daemon-reload
 dracut -f --compress=pigz
 
