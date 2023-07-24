@@ -9,5 +9,5 @@ journalctl --output=short-monotonic | grep -i "Reached target" > reached-target-
 
 cd /home/ecurtin/git/initoverlayfs
 ./build.sh
-#reboot
+reboot
 
