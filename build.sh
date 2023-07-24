@@ -19,6 +19,8 @@ journalctl --output=short-monotonic > journalctl$epoch.txt
 journalctl --output=short-monotonic | grep -i "Reached target" > reached_target$epoch.txt
 sed -i "s/UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/# UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/g" /etc/fstab
 cp mount-sysroot.service /usr/lib/systemd/system/
+sed -i 's#"$systemdsystemunitdir"/initrd-udevadm-cleanup-db.service#"$systemdsystemunitdir"/initrd-udevadm-cleanup-db.service \ \n"        $systemdsystemunitdir"/mount-sysroot.service#g' /usr/lib/dracut/modules.d/01systemd-initrd/module-setup.sh
+sed -i "s/initrd-udevadm-cleanup-db.service/initrd-udevadm-cleanup-db.service mount-sysroot.service/g" /usr/lib/systemd/system/initrd-switch-root.target
 systemctl daemon-reload
 dracut -f --compress=pigz
 
