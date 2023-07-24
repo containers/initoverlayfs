@@ -45,5 +45,5 @@ gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra inito
 sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
 # should be ro rhgb quiet, cannot remount ro, but can fix
-sed -i 's#options root=UUID=2f8957f6-9ecd-480f-b738-41d6da946bf4 ro#options root=/dev/vda3 rw rootfstype=ext4 rootwait init=/usr/sbin/initoverlayfs2init root=/dev/vda4#g' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
+sed -i 's#options root=UUID=2f8957f6-9ecd-480f-b738-41d6da946bf4 ro#options root=/dev/vda3 rw rootfstype=ext4 rootwait init=/usr/sbin/initoverlayfs2init secondstageroot=/dev/vda4#g' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
