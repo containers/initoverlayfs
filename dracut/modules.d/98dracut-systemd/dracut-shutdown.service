@@ -1,0 +1,15 @@
+#  This file is part of dracut.
+
+[Unit]
+Description=Restore /run/initramfs on shutdown
+Documentation=man:dracut-shutdown.service(8)
+After=local-fs.target boot.mount boot.automount
+Wants=local-fs.target
+ConditionPathExists=!/run/initramfs/bin/sh
+OnFailure=dracut-shutdown-onfailure.service
+
+[Service]
+RemainAfterExit=yes
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/usr/lib/dracut/dracut-initramfs-restore
