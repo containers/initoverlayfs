@@ -48,7 +48,7 @@ mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 cd ~/git/initoverlayfs
 gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/initoverlayfs2init
 ln -s init /usr/sbin/initoverlayfs2init
-dracut -l -f --aggressive-strip --strip initramfs.img
+dracut -l -f --strip initramfs.img
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
 # should be ro rhgb quiet, cannot remount ro, but can fix
