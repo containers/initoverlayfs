@@ -1,3 +1,6 @@
+#define _GNU_SOURCE
+
+#include <assert.h>
 #include <dirent.h>
 #include <err.h>
 #include <errno.h>
@@ -21,6 +24,13 @@
 #else
 #define F_TYPE_EQUAL(a, b) (a == (__SWORD_TYPE)b)
 #endif
+
+#define autofree __attribute__((cleanup(cleanup_free)))
+
+static inline void cleanup_free(void* p) {
+  void** pp = (void**)p;
+  free(*pp);
+}
 
 static int switchroot(const char* newroot) {
   /*  Don't try to unmount the old "/", there's no way to do it. */
@@ -75,12 +85,12 @@ static int switchroot(const char* newroot) {
     goto fail;
   }
 
-if (false) {
-  if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
-    warn("failed final mount moving %s to /", newroot);
-    goto fail;
+  if (false) {
+    if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
+      warn("failed final mount moving %s to /", newroot);
+      goto fail;
+    }
   }
-}
 
   if (chroot(".")) {
     warn("failed to change root");
@@ -107,30 +117,86 @@ static int pivot_root(const char* new_root, const char* put_old) {
 }
 
 #ifndef UNLOCK_OVERLAYDIR
-#define UNLOCK_OVERLAYDIR "/var/tmp/initoverlay"
+#define UNLOCK_OVERLAYDIR "/run/initoverlayfs"
 #endif
 
-static int mount_overlayfs() {
-  if (chdir("/") < 0)
-    err(1, "chdir");
-
-  if (mount("overlay", "/initoverlayfs", "overlay", MS_RDONLY,
-            "lowerdir=usr,upperdir=" UNLOCK_OVERLAYDIR
+static int mount_overlayfs(void) {
+  if (mount("overlay", UNLOCK_OVERLAYDIR, "overlay", MS_RDONLY,
+            "lowerdir=" UNLOCK_OVERLAYDIR ",upperdir=" UNLOCK_OVERLAYDIR
             "/upper,workdir=" UNLOCK_OVERLAYDIR "/work") < 0)
     err(1, "mount");
 
   return 0;
 }
 
-int main() {
-  // mount rw overlayfs /initoverlayfs
-  //  const int ret = mount(NULL, "/", NULL, MS_REMOUNT, NULL);
-  if (false) {
-    const int ret = mount_overlayfs();
-    if (ret) {
-      warn("failed to mount overlayfs: %d", ret);
-      return errno;
+static inline char* read_proc_cmdline(void) {
+  FILE* f = fopen("/proc/cmdline", "r");
+  char* cmdline = NULL;
+  size_t len;
+
+  if (!f)
+    goto out;
+
+  /* Note that /proc/cmdline will not end in a newline, so getline
+   * will fail unelss we provide a length.
+   */
+  if (getline(&cmdline, &len, f) < 0)
+    goto out;
+  /* ... but the length will be the size of the malloc buffer, not
+   * strlen().  Fix that.
+   */
+  len = strlen(cmdline);
+
+  if (cmdline[len - 1] == '\n')
+    cmdline[len - 1] = '\0';
+out:
+  if (f)
+    fclose(f);
+  return cmdline;
+}
+
+static inline char* read_proc_cmdline_key(const char* key) {
+  char* cmdline = NULL;
+  const char* iter;
+  char* ret = NULL;
+  size_t key_len = strlen(key);
+
+  cmdline = read_proc_cmdline();
+  if (!cmdline)
+    err(EXIT_FAILURE, "failed to read /proc/cmdline");
+
+  iter = cmdline;
+  while (iter != NULL) {
+    const char* next = strchr(iter, ' ');
+    const char* next_nonspc = next;
+    while (next_nonspc && *next_nonspc == ' ')
+      next_nonspc += 1;
+    if (strncmp(iter, key, key_len) == 0 && iter[key_len] == '=') {
+      const char* start = iter + key_len + 1;
+      if (next)
+        ret = strndup(start, next - start);
+      else
+        ret = strdup(start);
+      break;
     }
+    iter = next_nonspc;
+  }
+
+  free(cmdline);
+  return ret;
+}
+
+int main(void) {
+  autofree char* initoverlayfs_uuid =
+      read_proc_cmdline_key("initoverlayfs=UUID");
+  autofree char* device;
+  asprintf(&device, "/dev/disk/by-partuuid/%s", initoverlayfs_uuid);
+  mount(device, UNLOCK_OVERLAYDIR, NULL, 0, NULL);
+
+  const int ret = mount_overlayfs();
+  if (ret) {
+    warn("failed to mount overlayfs: %d", ret);
+    return errno;
   }
 
   if (false) {
@@ -140,12 +206,10 @@ int main() {
     }
   }
 
-if (false) {
-  if (switchroot("/initoverlayfs")) {
+  if (switchroot(UNLOCK_OVERLAYDIR)) {
     warn("failed to switchroot");
-//    return errno;
+    return errno;
   }
-}
 
   if (false) {
     if (chroot("/initoverlayfs")) {
