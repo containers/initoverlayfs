@@ -10,6 +10,7 @@ UUID="1dd3a986-997c-0c48-1d1b-b0d0399f3153"
 
 extract_initrd_into_initoverlayfs() {
   mkdir -p "$DIR_TO_DUMP_INITRAMFS"
+  mkfs.ext4 /dev/disk/by-partuuid/$UUID
   mount /dev/disk/by-partuuid/$UUID /run/initoverlayfs/
   cd "$DIR_TO_DUMP_INITRAMFS"
   /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | cpio -ivd
