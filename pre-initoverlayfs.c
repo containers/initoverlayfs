@@ -151,9 +151,11 @@ static inline char* read_proc_cmdline(void) {
 
   if (cmdline[len - 1] == '\n')
     cmdline[len - 1] = '\0';
+
 out:
   if (f)
     fclose(f);
+
   return cmdline;
 }
 
@@ -227,9 +229,17 @@ string_contains(const char *cmdline, const char c) {
 int main(void) {
   printf("Start pre-initoverlayfs\n");
   autofree char *cmdline = read_proc_cmdline ();
-  autofree char* initoverlayfs =
-      find_proc_cmdline_key(cmdline, "initoverlayfs");
+  while (!cmdline) {
+    printf("cmdline: '%s'\n", cmdline);
+    sleep(1);
+    cmdline = read_proc_cmdline ();
+  }
+
+  printf("cmdline: '%s'\n", cmdline);
+  autofree char* initoverlayfs = find_proc_cmdline_key(cmdline, "initoverlayfs");
+
   printf("cmdline: '%s' initoverlayfs: '%s'\n", cmdline, initoverlayfs);
+
   if (string_contains(initoverlayfs, ':')) {
     strtok(initoverlayfs, ":");
     /* const char* file = */ strtok(NULL, ":");
