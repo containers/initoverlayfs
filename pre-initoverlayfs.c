@@ -228,6 +228,12 @@ string_contains(const char *cmdline, const char c) {
 
 int main(void) {
   printf("Start pre-initoverlayfs\n");
+  errno = 0;
+  if (mount("proc", "/proc", "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
+    printf("mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
+    return errno;
+  }
+
   autofree char *cmdline = read_proc_cmdline ();
   while (!cmdline) {
     printf("cmdline: NULL\n");
