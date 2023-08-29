@@ -63,13 +63,14 @@ sudo valgrind $DIR_TO_DUMP_INITRAMFS/usr/sbin/pre-initoverlayfs
 sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
 # ln -s init /usr/sbin/pre-initoverlayfs
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
+sudo cp -r lib/dracut/modules.d/81pre-initramfs lib/dracut/modules.d/
 sudo dracut -l -f --strip $initramfs # sudo dracut -m kernel-modules -f --strip a.img -M -o nss-softokn --kernel-only
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
 boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
 bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | head -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
- sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/sbin/pre-initoverlayfs #g" /boot/loader/entries/$bls_file
+sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/sbin/pre-initoverlayfs #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ rhgb quiet//g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
 sudo lsinitrd | grep initoverlayfs
