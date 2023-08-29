@@ -2,6 +2,6 @@
 
 # called by dracut
 install() {
-    inst /usr/bin/pre-initoverlayfs
+    inst /usr/sbin/pre-initoverlayfs
 }
 
