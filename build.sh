@@ -13,7 +13,6 @@ extract_initrd_into_initoverlayfs() {
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
     sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | sudo cpio -ivd
-    sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
   else
     echo "ext4 support unsupported, to add later"
     exit 0
@@ -56,7 +55,8 @@ UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
 extract_initrd_into_initoverlayfs
 sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 cd ~/git/initoverlayfs
-gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/initoverlayfs2init
+sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/initoverlayfs2init
+sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
 # ln -s init /usr/sbin/initoverlayfs2init
 dracut -l -f --strip initramfs.img # sudo dracut -m kernel-modules -f --strip a.img -M -o nss-softokn --kernel-only
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
