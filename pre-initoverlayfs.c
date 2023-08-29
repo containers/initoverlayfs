@@ -16,7 +16,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#if 0
 #define STATFS_RAMFS_MAGIC 0x858458f6
 #define STATFS_TMPFS_MAGIC 0x01021994
 
@@ -33,6 +32,7 @@ static inline void cleanup_free(void* p) {
   free(*pp);
 }
 
+#if 0
 static int switchroot(const char* newroot) {
   /*  Don't try to unmount the old "/", there's no way to do it. */
   const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
@@ -129,6 +129,7 @@ static int mount_overlayfs(void) {
 
   return 0;
 }
+#endif
 
 static inline char* read_proc_cmdline(void) {
   FILE* f = fopen("/proc/cmdline", "r");
@@ -156,6 +157,7 @@ out:
   return cmdline;
 }
 
+#if 0
 static inline char* read_proc_cmdline_key(const char* key) {
   char* cmdline = NULL;
   const char* iter;
@@ -186,6 +188,7 @@ static inline char* read_proc_cmdline_key(const char* key) {
   free(cmdline);
   return ret;
 }
+#endif
 
 static inline char *
 find_proc_cmdline_key (const char *cmdline, const char *key)
@@ -216,22 +219,29 @@ static inline bool
 string_contains(const char *cmdline, const char c) {
   for (; cmdline; ++cmdline)
       if (*cmdline == c)
-        return true
+        return true;
 
   return false;
 }
-#endif
 
 int main(void) {
   printf("Start pre-initoverlayfs\n");
-#if 0
   autofree char *cmdline = read_proc_cmdline ();
-  autofree const char* initoverlayfs =
+  autofree char* initoverlayfs =
       find_proc_cmdline_key(cmdline, "initoverlayfs");
-  const char* file = strtok(cmdline, ":");
-  file = strtok(NULL, ":");
-  const char* part = initoverlayfs;
+  printf("cmdline: '%s' initoverlayfs: '%s'\n", cmdline, initoverlayfs);
+  if (string_contains(initoverlayfs, ':')) {
+    strtok(initoverlayfs, ":");
+    /* const char* file = */ strtok(NULL, ":");
+    const char* part = initoverlayfs;
+    errno = 0;
+    if (mount(part, "/initoverlayfs", NULL, 0, NULL)) {
+      printf("mount(\"%s\", \"/initoverlayfs\", NULL, 0, NULL) failed with errno: %d\n", part, errno);
+      return errno;
+    }
+  }
 
+#if 0
   autofree char* device;
   asprintf(&device, "/dev/disk/by-partuuid/%s", initoverlayfs_uuid);
   mount(device, UNLOCK_OVERLAYDIR, NULL, 0, NULL);
