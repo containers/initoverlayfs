@@ -13,7 +13,7 @@ extract_initrd_into_initoverlayfs() {
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
     sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | sudo cpio -ivd
-    mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
+    sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
   else
     echo "ext4 support unsupported, to add later"
     exit 0
