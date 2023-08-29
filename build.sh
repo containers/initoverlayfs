@@ -8,7 +8,7 @@ DIR_TO_DUMP_INITRAMFS="/run/initoverlayfs/"
 UUID="1dd3a986-997c-0c48-1d1b-b0d0399f3153"
 
 extract_initrd_into_initoverlayfs() {
-  mkdir -p "$DIR_TO_DUMP_INITRAMFS"
+  sudo mkdir -p "$DIR_TO_DUMP_INITRAMFS"
 
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
