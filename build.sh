@@ -56,8 +56,8 @@ extract_initrd_into_initoverlayfs
 sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 cd ~/git/initoverlayfs
 sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra pre-initoverlayfs.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/pre-initoverlayfs
-sudo ln -sf pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
-sudo ln -sf usr/bin/pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/init
+# sudo ln -sf pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
+# sudo ln -sf usr/bin/pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/init
 sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
 # ln -s init /usr/sbin/pre-initoverlayfs
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
@@ -67,5 +67,5 @@ sudo dracut -l -f --strip $initramfs # sudo dracut -m kernel-modules -f --strip 
 boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
 bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | head -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
-sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img #g" /boot/loader/entries/$bls_file
+sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/sbin/pre-initoverlayfs #g" /boot/loader/entries/$bls_file
 
