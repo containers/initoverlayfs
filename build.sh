@@ -54,7 +54,7 @@ fi
 
 UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
 extract_initrd_into_initoverlayfs
-mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
+sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 cd ~/git/initoverlayfs
 gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/initoverlayfs2init
 # ln -s init /usr/sbin/initoverlayfs2init
