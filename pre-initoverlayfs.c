@@ -238,7 +238,7 @@ int main(void) {
   printf("cmdline: '%s'\n", cmdline);
   autofree char* initoverlayfs = find_proc_cmdline_key(cmdline, "initoverlayfs");
 
-  printf("cmdline: '%s' initoverlayfs: '%s'\n", cmdline, initoverlayfs);
+  printf("cmdline: '%s' initoverlayfs: '%s'\n", cmdline, initoverlayfs ?: "NULL");
 
   if (string_contains(initoverlayfs, ':')) {
     strtok(initoverlayfs, ":");
