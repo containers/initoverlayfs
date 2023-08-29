@@ -7,14 +7,24 @@ release=$(uname -r)
 DIR_TO_DUMP_INITRAMFS="/run/initoverlayfs/"
 UUID="1dd3a986-997c-0c48-1d1b-b0d0399f3153"
 
-
 extract_initrd_into_initoverlayfs() {
   mkdir -p "$DIR_TO_DUMP_INITRAMFS"
-  mkfs.ext4 /dev/disk/by-partuuid/$UUID
-  mount /dev/disk/by-partuuid/$UUID /run/initoverlayfs/
-  cd "$DIR_TO_DUMP_INITRAMFS"
-  /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | cpio -ivd
-  cd -
+
+  if command -v mkfs.erofs; then
+    cd /run/initoverlayfs/
+    /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | cpio -ivd
+    mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
+  else
+    echo "ext4 support unsupported, to add later"
+    exit 0
+
+    mkfs.ext4 /dev/disk/by-partuuid/$UUID
+    $mkfs /dev/disk/by-partuuid/$UUID
+    mount /dev/disk/by-partuuid/$UUID /run/initoverlayfs/
+    cd "$DIR_TO_DUMP_INITRAMFS"
+    /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | cpio -ivd
+    cd -
+  fi
 }
 
 cd 
@@ -51,6 +61,8 @@ gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra inito
 dracut -l -f --strip initramfs.img # sudo dracut -m kernel-modules -f --strip a.img -M -o nss-softokn --kernel-only
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
+boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
+bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | head -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
-sed -i 's#options #options initoverlayfs=UUID=$UUID #g' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
+sed -i 's#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img #g' /boot/loader/entries/$bls_file
 
