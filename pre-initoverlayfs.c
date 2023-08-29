@@ -16,6 +16,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#if 0
 #define STATFS_RAMFS_MAGIC 0x858458f6
 #define STATFS_TMPFS_MAGIC 0x01021994
 
@@ -186,9 +187,51 @@ static inline char* read_proc_cmdline_key(const char* key) {
   return ret;
 }
 
+static inline char *
+find_proc_cmdline_key (const char *cmdline, const char *key)
+{
+  const size_t key_len = strlen (key);
+  for (const char *iter = cmdline; iter;)
+    {
+      const char *next = strchr (iter, ' ');
+      if (strncmp (iter, key, key_len) == 0 && iter[key_len] == '=')
+        {
+          const char *start = iter + key_len + 1;
+          if (next)
+            return strndup (start, next - start);
+
+          return strdup (start);
+        }
+
+      if (next)
+        next += strspn (next, " ");
+
+      iter = next;
+    }
+
+  return NULL;
+}
+
+static inline bool
+string_contains(const char *cmdline, const char c) {
+  for (; cmdline; ++cmdline)
+      if (*cmdline == c)
+        return true
+
+  return false;
+}
+#endif
+
 int main(void) {
-  autofree char* initoverlayfs_uuid =
-      read_proc_cmdline_key("initoverlayfs=UUID");
+  printf("Start pre-initoverlayfs\n");
+#if 0
+  autofree char *cmdline = read_proc_cmdline ();
+  autofree const char* initoverlayfs =
+      find_proc_cmdline_key(cmdline, "initoverlayfs");
+  const char* file = strtok(cmdline, ":");
+  file = strtok(NULL, ":");
+  const char* part = initoverlayfs;
+
   autofree char* device;
   asprintf(&device, "/dev/disk/by-partuuid/%s", initoverlayfs_uuid);
   mount(device, UNLOCK_OVERLAYDIR, NULL, 0, NULL);
@@ -227,5 +270,7 @@ int main(void) {
   // If you reach here you have failed, exec should have taken control of this
   // process
   warn("failed to exec init process");
+#endif
+
   return errno;
 }
