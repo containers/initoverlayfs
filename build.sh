@@ -65,5 +65,5 @@ sudo dracut -l -f --strip $initramfs # sudo dracut -m kernel-modules -f --strip 
 boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
 bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | head -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
-sudo sed -i 's#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img #g' /boot/loader/entries/$bls_file
+sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img #g" /boot/loader/entries/$bls_file
 
