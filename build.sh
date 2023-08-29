@@ -55,9 +55,9 @@ UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
 extract_initrd_into_initoverlayfs
 sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 cd ~/git/initoverlayfs
-sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra initoverlayfs2init.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/initoverlayfs2init
+sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra pre-initoverlayfs.c -o $DIR_TO_DUMP_INITRAMFS/usr/sbin/pre-initoverlayfs
 sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
-# ln -s init /usr/sbin/initoverlayfs2init
+# ln -s init /usr/sbin/pre-initoverlayfs
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
 sudo dracut -l -f --strip $initramfs # sudo dracut -m kernel-modules -f --strip a.img -M -o nss-softokn --kernel-only
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
