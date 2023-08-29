@@ -230,7 +230,7 @@ int main(void) {
   printf("Start pre-initoverlayfs\n");
   autofree char *cmdline = read_proc_cmdline ();
   while (!cmdline) {
-    printf("cmdline: '%s'\n", cmdline);
+    printf("cmdline: NULL\n");
     sleep(1);
     cmdline = read_proc_cmdline ();
   }
