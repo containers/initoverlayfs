@@ -246,17 +246,17 @@ int main(void) {
     cmdline = read_proc_cmdline ();
   }
 
-  printd("cmdline: '%s'\n", cmdline);
+  printd("cmdline: \"%s\"\n", cmdline);
   autofree char* initoverlayfs = find_proc_cmdline_key(cmdline, "initoverlayfs");
 
-  printd("cmdline: '%s' initoverlayfs: '%s'\n", cmdline, initoverlayfs ? initoverlayfs : "NULL");
+  printd("cmdline: \"%s\" initoverlayfs: \"%s\"\n", cmdline, initoverlayfs ? initoverlayfs : "NULL");
 
   if (string_contains(initoverlayfs, ':')) {
     strtok(initoverlayfs, ":");
     /* const char* file = */ strtok(NULL, ":");
     const char* part = initoverlayfs;
     errno = 0;
-    if (mount(part, "/initoverlayfs", NULL, 0, NULL)) {
+    if (mount(part, "/initoverlayfs", "ext4", 0, NULL)) {
       printf("mount(\"%s\", \"/initoverlayfs\", NULL, 0, NULL) failed with errno: %d\n", part, errno);
       return errno;
     }
