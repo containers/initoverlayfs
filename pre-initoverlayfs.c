@@ -231,6 +231,25 @@ string_contains(const char *cmdline, const char c) {
     printf(__VA_ARGS__); \
   } while (0)
 
+static inline int print_dev(void)
+{
+ struct dirent *dp;
+ DIR *dfd;
+ char *dir = "/dev";
+ if ((dfd = opendir(dir)) == NULL)
+ {
+  printf("Can't open %s\n", dir);
+  return 0;
+ }
+
+ while ((dp = readdir(dfd)) != NULL)
+ {
+  printd("/dev/%s\n", dp->d_name);
+ }
+
+  return 0;
+}
+
 int main(void) {
   printd("Start pre-initoverlayfs\n");
   if (mount("proc", "/proc", "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
@@ -243,10 +262,14 @@ int main(void) {
     return errno;
   }
 
+#if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
     printf("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
     return errno;
   }
+#endif
+
+print_dev();
 
   autofree char *cmdline = read_proc_cmdline ();
   if (!cmdline) {
@@ -262,9 +285,8 @@ int main(void) {
     strtok(initoverlayfs, ":");
     /* const char* file = */ strtok(NULL, ":");
     const char* part = initoverlayfs;
-    while (mount(part, "/boot", "ext4", MS_RDONLY, NULL)) {
+    if (mount(part, "/boot", "ext4", MS_RDONLY, NULL)) {
       printf("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
-      sleep(1);
     }
   }
 
