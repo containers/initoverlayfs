@@ -243,6 +243,7 @@ else if (pid > 0) { \
     break; \
 } \
 \
+    printd("execl(\"%s\")", exe); \
     execl(exe, exe, __VA_ARGS__, (char*) NULL); \
 } while (0)
 
@@ -258,6 +259,7 @@ else if (pid > 0) { \
     break; \
 } \
 \
+  printd("execlp(\"%s\")", exe); \
   execlp(exe, exe, __VA_ARGS__, (char*) NULL); \
 } while (0)
 
