@@ -310,7 +310,7 @@ int main(void) {
   }
 
 printd("Start systemd-udevd\n");
-exec_absolute_no_wait("/lib/systemd/systemd-udevd");
+exec_absolute("/lib/systemd/systemd-udevd", "--daemon", "--resolve-names=never");
 printd("Start udevadm\n");
 exec_path("udevadm", "trigger", "--type=devices", "--action=add" ,"--subsystem-match=block" /*, "-w"*/);
 printd("Finish udevadm\n");
