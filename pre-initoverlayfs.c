@@ -312,7 +312,7 @@ int main(void) {
 printd("Start systemd-udevd\n");
 exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
 printd("Start udevadm\n");
-exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=block,virtio,pci,nvme", "-w");
+exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=block,virtio,pci,nvme" /*, "-w"*/);
 printd("Finish udevadm\n");
 
 #if 0
