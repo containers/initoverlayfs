@@ -73,5 +73,5 @@ bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | head -n1)
 sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/sbin/pre-initoverlayfs #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ rhgb quiet//g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
-sudo lsinitrd | grep "initoverlayfs\|boot"
+sudo lsinitrd | grep "initoverlayfs\|boot\|blkid\|udev"
 
