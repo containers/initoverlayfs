@@ -244,10 +244,8 @@ int main(void) {
   }
 
   autofree char *cmdline = read_proc_cmdline ();
-  while (!cmdline) {
+  if (!cmdline) {
     printd("cmdline: NULL\n");
-    sleep(1);
-    cmdline = read_proc_cmdline ();
   }
 
   printd("cmdline: \"%s\"\n", cmdline);
