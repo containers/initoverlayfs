@@ -309,8 +309,11 @@ int main(void) {
     return errno;
   }
 
+printd("Start systemd-udevd\n");
 exec_absolute_no_wait("/lib/systemd/systemd-udevd");
+printd("Start udevadm\n");
 exec_path("udevadm", "trigger", "--type=devices", "--action=add" ,"--subsystem-match=block", "-w");
+printd("Finish udevadm\n");
 
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
