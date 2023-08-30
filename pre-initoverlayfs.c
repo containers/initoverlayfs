@@ -231,6 +231,36 @@ string_contains(const char *cmdline, const char c) {
     printf(__VA_ARGS__); \
   } while (0)
 
+#define exec_absolute(exe, ...) \
+do { \
+const pid_t pid = fork(); \
+if (pid == -1) { \
+  printf("fail exec_absolute\n"); \
+  break; \
+} \
+else if (pid > 0) { \
+    waitpid(pid, 0, 0); \
+    break; \
+} \
+\
+    execl(exe, exe, __VA_ARGS__, (char*) NULL); \
+} while (0)
+
+#define exec_path(exe, ...) \
+do { \
+const pid_t pid = fork(); \
+if (pid == -1) { \
+  printf("fail exec_path\n"); \
+  break; \
+} \
+else if (pid > 0) { \
+    waitpid(pid, 0, 0); \
+    break; \
+} \
+\
+  execlp(exe, exe, __VA_ARGS__, (char*) NULL); \
+} while (0)
+
 static inline int print_dev(void)
 {
  struct dirent *dp;
@@ -261,6 +291,10 @@ int main(void) {
     printf("mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
     return errno;
   }
+
+exec_absolute("/lib/systemd/systemd-udevd", "--daemon", "--resolve-names=never");
+exec_path("udevadm", "trigger");
+exec_path("udevadm", "settle");
 
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
