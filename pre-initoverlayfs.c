@@ -226,8 +226,13 @@ string_contains(const char *cmdline, const char c) {
   return false;
 }
 
+#define printd(...)      \
+  do {                   \
+    printf(__VA_ARGS__); \
+  } while (0)
+
 int main(void) {
-  printf("Start pre-initoverlayfs\n");
+  printd("Start pre-initoverlayfs\n");
   errno = 0;
   if (mount("proc", "/proc", "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
     printf("mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
@@ -236,15 +241,15 @@ int main(void) {
 
   autofree char *cmdline = read_proc_cmdline ();
   while (!cmdline) {
-    printf("cmdline: NULL\n");
+    printd("cmdline: NULL\n");
     sleep(1);
     cmdline = read_proc_cmdline ();
   }
 
-  printf("cmdline: '%s'\n", cmdline);
+  printd("cmdline: '%s'\n", cmdline);
   autofree char* initoverlayfs = find_proc_cmdline_key(cmdline, "initoverlayfs");
 
-  printf("cmdline: '%s' initoverlayfs: '%s'\n", cmdline, initoverlayfs ? initoverlayfs : "NULL");
+  printd("cmdline: '%s' initoverlayfs: '%s'\n", cmdline, initoverlayfs ? initoverlayfs : "NULL");
 
   if (string_contains(initoverlayfs, ':')) {
     strtok(initoverlayfs, ":");
