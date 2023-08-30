@@ -243,6 +243,11 @@ int main(void) {
     return errno;
   }
 
+  if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
+    printf("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
+    return errno;
+  }
+
   autofree char *cmdline = read_proc_cmdline ();
   if (!cmdline) {
     printd("cmdline: NULL\n");
