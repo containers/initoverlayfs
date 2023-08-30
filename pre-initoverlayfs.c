@@ -310,7 +310,7 @@ int main(void) {
   }
 
 exec_absolute_no_wait("/lib/systemd/systemd-udevd");
-exec_path("udevadm", "trigger", "--name-match=/dev/vda2", "--action=add");
+exec_path("udevadm", "trigger", "--type=all", "--name-match=/dev/vda2", "--action=add" ,"--prioritized-subsystem=module,block,tpmrm,net,tty,input");
 exec_path("udevadm", "settle");
 
 #if 0
