@@ -233,6 +233,7 @@ string_contains(const char *cmdline, const char c) {
 
 #define exec_absolute(exe, ...) \
 do { \
+    printd("execl(\"%s\")", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
   printf("fail exec_absolute\n"); \
@@ -243,12 +244,12 @@ else if (pid > 0) { \
     break; \
 } \
 \
-    printd("execl(\"%s\")", exe); \
     execl(exe, exe, __VA_ARGS__, (char*) NULL); \
 } while (0)
 
 #define exec_absolute_no_args(exe) \
 do { \
+    printd("execl(\"%s\")", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
   printf("fail exec_absolute_no_args\n"); \
@@ -259,12 +260,12 @@ else if (pid > 0) { \
     break; \
 } \
 \
-    printd("execl(\"%s\")", exe); \
     execl(exe, exe, (char*) NULL); \
 } while (0)
 
 #define exec_path(exe, ...) \
 do { \
+  printd("execlp(\"%s\")", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
   printf("fail exec_path\n"); \
@@ -275,7 +276,6 @@ else if (pid > 0) { \
     break; \
 } \
 \
-  printd("execlp(\"%s\")", exe); \
   execlp(exe, exe, __VA_ARGS__, (char*) NULL); \
 } while (0)
 
