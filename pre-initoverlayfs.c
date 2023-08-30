@@ -233,9 +233,13 @@ string_contains(const char *cmdline, const char c) {
 
 int main(void) {
   printd("Start pre-initoverlayfs\n");
-  errno = 0;
   if (mount("proc", "/proc", "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
     printf("mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
+    return errno;
+  }
+
+  if (mount("sysfs", "/sys", "sysfs", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
+    printf("mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
     return errno;
   }
 
@@ -256,8 +260,8 @@ int main(void) {
     /* const char* file = */ strtok(NULL, ":");
     const char* part = initoverlayfs;
     errno = 0;
-    if (mount(part, "/initoverlayfs", "ext4", 0, NULL)) {
-      printf("mount(\"%s\", \"/initoverlayfs\", NULL, 0, NULL) failed with errno: %d\n", part, errno);
+    if (mount(part, "/boot", "ext4", MS_RDONLY, NULL)) {
+      printf("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
       return errno;
     }
   }
