@@ -310,8 +310,7 @@ int main(void) {
   }
 
 exec_absolute_no_wait("/lib/systemd/systemd-udevd");
-exec_path("udevadm", "trigger", "--type=devices", "--action=add" ,"--prioritized-subsystem=block");
-exec_path("udevadm", "settle");
+exec_path("udevadm", "trigger", "--type=devices", "--action=add" ,"--prioritized-subsystem=block", "-w");
 
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
