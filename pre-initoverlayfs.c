@@ -262,10 +262,9 @@ int main(void) {
     strtok(initoverlayfs, ":");
     /* const char* file = */ strtok(NULL, ":");
     const char* part = initoverlayfs;
-    errno = 0;
-    if (mount(part, "/boot", "ext4", MS_RDONLY, NULL)) {
+    while (mount(part, "/boot", "ext4", MS_RDONLY, NULL)) {
       printf("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
-      return errno;
+      sleep(1);
     }
   }
 
