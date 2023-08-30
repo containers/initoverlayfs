@@ -338,9 +338,11 @@ print_dev();
     strtok(initoverlayfs, ":");
     /* const char* file = */ strtok(NULL, ":");
     const char* part = initoverlayfs;
-    if (mount(part, "/boot", "ext4", MS_RDONLY, NULL)) {
+    printd("Start mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
+    if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
       printf("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
-    }
+
+    printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
 
 #if 0
