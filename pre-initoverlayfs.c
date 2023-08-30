@@ -247,16 +247,15 @@ else if (pid > 0) { \
     execl(exe, exe, __VA_ARGS__, (char*) NULL); \
 } while (0)
 
-#define exec_absolute_no_args(exe) \
+#define exec_absolute_no_wait(exe) \
 do { \
     printd("execl(\"%s\")", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
-  printf("fail exec_absolute_no_args\n"); \
+  printf("fail exec_absolute_no_wait\n"); \
   break; \
 } \
 else if (pid > 0) { \
-    waitpid(pid, 0, 0); \
     break; \
 } \
 \
@@ -310,7 +309,7 @@ int main(void) {
     return errno;
   }
 
-exec_absolute_no_args("/lib/systemd/systemd-udevd");
+exec_absolute_no_wait("/lib/systemd/systemd-udevd");
 exec_path("udevadm", "trigger", "--type=all", "--action=add" ,"--prioritized-subsystem=module,block,tpmrm,net,tty,input");
 exec_path("udevadm", "settle");
 
