@@ -314,7 +314,7 @@ exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
 printd("Start udevadm\n");
 exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=block,virtio,pci,nvme" /*, "-w"*/);
 printd("Finish udevadm\n");
-
+sleep(1);
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
     printf("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
