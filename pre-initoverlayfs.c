@@ -315,7 +315,6 @@ printd("Start udevadm\n");
 sleep(1);
 exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" /*, "-w"*/);
 printd("Finish udevadm\n");
-sleep(1);
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
     printf("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
