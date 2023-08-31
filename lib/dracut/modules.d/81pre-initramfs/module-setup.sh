@@ -1,6 +1,9 @@
 #!/usr/bin/bash
 
-# called by dracut
+installkernel() {
+    instmods erofs
+}
+
 install() {
     inst /usr/sbin/pre-initoverlayfs
     inst_dir /initoverlayfs
