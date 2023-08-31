@@ -416,6 +416,7 @@ printd("Finish udevadm\n");
     if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
       print("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
 
+    exec_path("bash");
     fork_exec_path("losetup", "-fP", file);
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
