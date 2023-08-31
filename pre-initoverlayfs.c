@@ -409,7 +409,10 @@ printd("Finish udevadm\n");
     const char* file = strtok(NULL, ":");
     const char* part = initoverlayfs;
     printd("Start mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
+#if 0
     exec_path("bash");
+#endif
+
     if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
       print("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
 
