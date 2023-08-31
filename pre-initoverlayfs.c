@@ -348,9 +348,9 @@ static inline int fd_move_above_stdio(int fd) {
 #endif
 
 static inline int log_open_kmsg(void) {
-        kmsg_f = fopen("/dev/kmsg", "a");
+        kmsg_f = fopen("/dev/kmsg", "w");
         if (!kmsg_f) {
-                print("open(\"/dev/kmsg\", \"a\"), %d = errno", errno);
+                print("open(\"/dev/kmsg\", \"w\"), %d = errno", errno);
                 return errno;
         }
 
