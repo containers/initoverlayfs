@@ -61,6 +61,7 @@ sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra 
 # sudo ln -sf pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
 # sudo ln -sf usr/bin/pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/init
 sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
+sudo losetup --show -fP /boot/initoverlayfs-$release.img
 # ln -s init /usr/sbin/pre-initoverlayfs
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
