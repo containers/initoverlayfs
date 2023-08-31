@@ -243,7 +243,7 @@ static FILE* kmsg_f = 0;
     print(__VA_ARGS__); \
   } while (0)
 
-#define exec_absolute(exe, ...) \
+#define fork_exec_absolute(exe, ...) \
 do { \
     printd("execl(\"%s\")\n", exe); \
 const pid_t pid = fork(); \
@@ -387,7 +387,7 @@ int main(void) {
 
 log_open_kmsg();
 printd("Start systemd-udevd\n");
-exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
+fork_exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
 printd("Start udevadm\n");
 fork_exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=module", "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" , "-w");
 printd("Finish udevadm\n");
@@ -409,15 +409,13 @@ printd("Finish udevadm\n");
     const char* file = strtok(NULL, ":");
     const char* part = initoverlayfs;
     printd("Start mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
-#if 0
-    exec_path("bash");
-#endif
 
     if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
       print("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
 
+    fork_exec_absolute("/usr/sbin/modprobe", "loop");
+    fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
     exec_path("bash");
-    fork_exec_path("losetup", "-fP", file);
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
 
