@@ -245,7 +245,7 @@ static FILE* kmsg_f = 0;
 
 #define exec_absolute(exe, ...) \
 do { \
-    printd("execl(\"%s\")", exe); \
+    printd("execl(\"%s\")\n", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
   print("fail exec_absolute\n"); \
@@ -261,7 +261,7 @@ else if (pid > 0) { \
 
 #define exec_absolute_no_wait(exe) \
 do { \
-    printd("execl(\"%s\")", exe); \
+    printd("execl(\"%s\")\n", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
   print("fail exec_absolute_no_wait\n"); \
@@ -276,7 +276,7 @@ else if (pid > 0) { \
 
 #define exec_path(exe, ...) \
 do { \
-  printd("execlp(\"%s\")", exe); \
+  printd("execlp(\"%s\")\n", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
   print("fail exec_path\n"); \
@@ -385,7 +385,7 @@ printd("Finish udevadm\n");
 
 sleep(1);
 print_dev();
-
+sleep(1);
   autofree char *cmdline = read_proc_cmdline ();
   if (!cmdline) {
     printd("cmdline: NULL\n");
