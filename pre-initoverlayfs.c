@@ -340,8 +340,10 @@ static inline int log_open_kmsg(void) {
                 return 0;
 
         kmsg_fd = open("/dev/kmsg", O_WRONLY|O_NOCTTY|O_CLOEXEC);
-        if (kmsg_fd < 0)
+        if (kmsg_fd < 0) {
+                printf("%d = open(\"/dev/kmsg\", O_WRONLY|O_NOCTTY|O_CLOEXEC), %d = errno", kmsg_fd, errno);
                 return -errno;
+        }
 
         kmsg_fd = fd_move_above_stdio(kmsg_fd);
         return 0;
