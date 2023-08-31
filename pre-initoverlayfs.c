@@ -226,6 +226,8 @@ string_contains(const char *cmdline, const char c) {
   return false;
 }
 
+static int kmsg_fd = 0;
+
 #define printd(...)      \
   do {                   \
     printf(__VA_ARGS__); \
@@ -297,8 +299,56 @@ static inline int print_dev(void)
   return 0;
 }
 
+static inline int fd_move_above_stdio(int fd) {
+        int flags, copy;
+
+        /* Moves the specified file descriptor if possible out of the range [0…2], i.e. the range of
+         * stdin/stdout/stderr. If it can't be moved outside of this range the original file descriptor is
+         * returned. This call is supposed to be used for long-lasting file descriptors we allocate in our code that
+         * might get loaded into foreign code, and where we want ensure our fds are unlikely used accidentally as
+         * stdin/stdout/stderr of unrelated code.
+         *
+         * Note that this doesn't fix any real bugs, it just makes it less likely that our code will be affected by
+         * buggy code from others that mindlessly invokes 'fprintf(stderr, …' or similar in places where stderr has
+         * been closed before.
+         *
+         * This function is written in a "best-effort" and "least-impact" style. This means whenever we encounter an
+         * error we simply return the original file descriptor, and we do not touch errno. */
+
+        if (fd < 0 || fd > 2)
+                return fd;
+
+        flags = fcntl(fd, F_GETFD, 0);
+        if (flags < 0)
+                return fd;
+
+        if (flags & FD_CLOEXEC)
+                copy = fcntl(fd, F_DUPFD_CLOEXEC, 3);
+        else
+                copy = fcntl(fd, F_DUPFD, 3);
+        if (copy < 0)
+                return fd;
+
+        assert(copy > 2);
+
+        (void) close(fd);
+        return copy;
+}
+
+static inline int log_open_kmsg(void) {
+        if (kmsg_fd >= 0)
+                return 0;
+
+        kmsg_fd = open("/dev/kmsg", O_WRONLY|O_NOCTTY|O_CLOEXEC);
+        if (kmsg_fd < 0)
+                return -errno;
+
+        kmsg_fd = fd_move_above_stdio(kmsg_fd);
+        return 0;
+}
+
 int main(void) {
-  printd("Start pre-initoverlayfs\n");
+  printf("Start pre-initoverlayfs\n");
   if (mount("proc", "/proc", "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
     printf("mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
     return errno;
@@ -309,10 +359,10 @@ int main(void) {
     return errno;
   }
 
+log_open_kmsg();
 printd("Start systemd-udevd\n");
 exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
 printd("Start udevadm\n");
-sleep(1);
 exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=module", "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" , "-w");
 printd("Finish udevadm\n");
 #if 0
@@ -344,6 +394,8 @@ print_dev();
 
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
+
+  close(kmsg_fd);
 
 #if 0
   autofree char* device;
