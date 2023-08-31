@@ -383,10 +383,10 @@ printd("Finish udevadm\n");
   }
 #endif
 
-sleep(1);
 print_dev();
-sleep(1);
+  printd("Start read_proc_cmdline\n");
   autofree char *cmdline = read_proc_cmdline ();
+  printd("Finish read_proc_cmdline\n");
   if (!cmdline) {
     printd("cmdline: NULL\n");
   }
