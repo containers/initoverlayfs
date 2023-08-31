@@ -354,6 +354,7 @@ static inline int log_open_kmsg(void) {
                 return errno;
         }
 
+        setvbuf(kmsg_f, 0, _IOLBF, 0);
         return 0;
 }
 
