@@ -290,6 +290,7 @@ else if (pid > 0) { \
   execlp(exe, exe, __VA_ARGS__, (char*) NULL); \
 } while (0)
 
+#if 0
 static inline int print_dev(void)
 {
  struct dirent *dp;
@@ -309,7 +310,6 @@ static inline int print_dev(void)
   return 0;
 }
 
-#if 0
 static inline int fd_move_above_stdio(int fd) {
         int flags, copy;
 
