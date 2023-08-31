@@ -53,7 +53,7 @@ static int switchroot(const char* newroot) {
   for (i = 0; umounts[i] != NULL; i++) {
     char newmount[PATH_MAX];
 
-    snprintf(newmount, sizeof(newmount), "%s%s", newroot, umounts[i]);
+    snprint(newmount, sizeof(newmount), "%s%s", newroot, umounts[i]);
 
     if ((stat(umounts[i], &sb) == 0) && sb.st_dev == oldroot_stat.st_dev) {
       /* mount point to move seems to be a normal directory or stat failed */
@@ -72,7 +72,7 @@ static int switchroot(const char* newroot) {
       umount2(umounts[i], MNT_FORCE);
     }
 
-    printf("succeeeded to mount moving %s to %s", umounts[i], newmount);
+    print("succeeeded to mount moving %s to %s", umounts[i], newmount);
   }
 
   if (chdir(newroot)) {
@@ -226,11 +226,21 @@ string_contains(const char *cmdline, const char c) {
   return false;
 }
 
-static int kmsg_fd = 0;
+static FILE* kmsg_f = 0;
+
+#define print(...) \
+  do {                   \
+    if (kmsg_f) { \
+      fprintf(kmsg_f, __VA_ARGS__); \
+      break; \
+    } \
+      \
+    printf(__VA_ARGS__); \
+  } while (0)
 
 #define printd(...)      \
   do {                   \
-    printf(__VA_ARGS__); \
+    print(__VA_ARGS__); \
   } while (0)
 
 #define exec_absolute(exe, ...) \
@@ -238,7 +248,7 @@ do { \
     printd("execl(\"%s\")", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
-  printf("fail exec_absolute\n"); \
+  print("fail exec_absolute\n"); \
   break; \
 } \
 else if (pid > 0) { \
@@ -254,7 +264,7 @@ do { \
     printd("execl(\"%s\")", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
-  printf("fail exec_absolute_no_wait\n"); \
+  print("fail exec_absolute_no_wait\n"); \
   break; \
 } \
 else if (pid > 0) { \
@@ -269,7 +279,7 @@ do { \
   printd("execlp(\"%s\")", exe); \
 const pid_t pid = fork(); \
 if (pid == -1) { \
-  printf("fail exec_path\n"); \
+  print("fail exec_path\n"); \
   break; \
 } \
 else if (pid > 0) { \
@@ -287,7 +297,7 @@ static inline int print_dev(void)
  char *dir = "/dev";
  if ((dfd = opendir(dir)) == NULL)
  {
-  printf("Can't open %s\n", dir);
+  print("Can't open %s\n", dir);
   return 0;
  }
 
@@ -299,6 +309,7 @@ static inline int print_dev(void)
   return 0;
 }
 
+#if 0
 static inline int fd_move_above_stdio(int fd) {
         int flags, copy;
 
@@ -309,7 +320,7 @@ static inline int fd_move_above_stdio(int fd) {
          * stdin/stdout/stderr of unrelated code.
          *
          * Note that this doesn't fix any real bugs, it just makes it less likely that our code will be affected by
-         * buggy code from others that mindlessly invokes 'fprintf(stderr, …' or similar in places where stderr has
+         * buggy code from others that mindlessly invokes 'fprint(stderr, …' or similar in places where stderr has
          * been closed before.
          *
          * This function is written in a "best-effort" and "least-impact" style. This means whenever we encounter an
@@ -334,30 +345,27 @@ static inline int fd_move_above_stdio(int fd) {
         (void) close(fd);
         return copy;
 }
+#endif
 
 static inline int log_open_kmsg(void) {
-        if (kmsg_fd >= 0)
-                return 0;
-
-        kmsg_fd = open("/dev/kmsg", O_WRONLY|O_NOCTTY|O_CLOEXEC);
-        if (kmsg_fd < 0) {
-                printf("%d = open(\"/dev/kmsg\", O_WRONLY|O_NOCTTY|O_CLOEXEC), %d = errno", kmsg_fd, errno);
-                return -errno;
+        kmsg_f = fopen("/dev/kmsg", "a");
+        if (!kmsg_f) {
+                print("open(\"/dev/kmsg\", \"a\"), %d = errno", errno);
+                return errno;
         }
 
-        kmsg_fd = fd_move_above_stdio(kmsg_fd);
         return 0;
 }
 
 int main(void) {
-  printf("Start pre-initoverlayfs\n");
+  print("Start pre-initoverlayfs\n");
   if (mount("proc", "/proc", "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
-    printf("mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
+    print("mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
     return errno;
   }
 
   if (mount("sysfs", "/sys", "sysfs", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
-    printf("mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
+    print("mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL) failed with errno: %d\n", errno);
     return errno;
   }
 
@@ -369,7 +377,7 @@ exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-
 printd("Finish udevadm\n");
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
-    printf("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
+    print("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
     return errno;
   }
 #endif
@@ -392,16 +400,16 @@ print_dev();
     const char* part = initoverlayfs;
     printd("Start mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
     if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
-      printf("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
+      print("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
 
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
 
-  close(kmsg_fd);
+  fclose(kmsg_f);
 
 #if 0
   autofree char* device;
-  asprintf(&device, "/dev/disk/by-partuuid/%s", initoverlayfs_uuid);
+  asprint(&device, "/dev/disk/by-partuuid/%s", initoverlayfs_uuid);
   mount(device, UNLOCK_OVERLAYDIR, NULL, 0, NULL);
 
   const int ret = mount_overlayfs();
