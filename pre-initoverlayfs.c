@@ -313,7 +313,7 @@ printd("Start systemd-udevd\n");
 exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
 printd("Start udevadm\n");
 sleep(1);
-exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-mtahc=module", "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" , "-w");
+exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=module", "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" , "-w");
 printd("Finish udevadm\n");
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
