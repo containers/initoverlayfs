@@ -381,9 +381,10 @@ printd("Finish udevadm\n");
     print("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
     return errno;
   }
+
+  print_dev();
 #endif
 
-print_dev();
   printd("Start read_proc_cmdline\n");
   autofree char *cmdline = read_proc_cmdline ();
   printd("Finish read_proc_cmdline\n");
