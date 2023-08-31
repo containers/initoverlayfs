@@ -376,20 +376,21 @@ int main(void) {
     return errno;
   }
 
+  if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
+    print("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
+    return errno;
+  }
+
+#if 0
+  print_dev();
+#endif
+
 log_open_kmsg();
 printd("Start systemd-udevd\n");
 exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
 printd("Start udevadm\n");
 fork_exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=module", "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" , "-w");
 printd("Finish udevadm\n");
-#if 0
-  if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
-    print("mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, NULL) failed with errno: %d\n", errno);
-    return errno;
-  }
-
-  print_dev();
-#endif
 
   printd("Start read_proc_cmdline\n");
   autofree char *cmdline = read_proc_cmdline ();
