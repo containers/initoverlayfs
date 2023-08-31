@@ -274,7 +274,7 @@ else if (pid > 0) { \
     execl(exe, exe, (char*) NULL); \
 } while (0)
 
-#define exec_path(exe, ...) \
+#define fork_exec_path(exe, ...) \
 do { \
   printd("execlp(\"%s\")\n", exe); \
 const pid_t pid = fork(); \
@@ -288,6 +288,12 @@ else if (pid > 0) { \
 } \
 \
   execlp(exe, exe, __VA_ARGS__, (char*) NULL); \
+} while (0)
+
+#define exec_path(exe) \
+do { \
+  printd("execlp(\"%s\")\n", exe); \
+  execlp(exe, exe, (char*) NULL); \
 } while (0)
 
 #if 0
@@ -374,7 +380,7 @@ log_open_kmsg();
 printd("Start systemd-udevd\n");
 exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
 printd("Start udevadm\n");
-exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=module", "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" , "-w");
+fork_exec_path("udevadm", "trigger", "--type=devices", "--action=add" , "--subsystem-match=module", "--subsystem-match=block", "--subsystem-match=virtio", "--subsystem-match=pci", "--subsystem-match=nvme" , "-w");
 printd("Finish udevadm\n");
 #if 0
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID|MS_STRICTATIME, "mode=0755,size=4m")) {
@@ -406,7 +412,7 @@ printd("Finish udevadm\n");
     if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
       print("mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
 
-    exec_path("losetup", "-fP", file);
+    fork_exec_path("losetup", "-fP", file);
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
 
