@@ -383,6 +383,7 @@ printd("Finish udevadm\n");
   }
 #endif
 
+sleep(1);
 print_dev();
 
   autofree char *cmdline = read_proc_cmdline ();
