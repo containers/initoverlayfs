@@ -71,6 +71,8 @@ sudo dracut -l -f --strip $initramfs # sudo dracut -m kernel-modules -f --strip 
 boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
 bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | head -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
+sudo sed -i '/boot.*ext4/d' /etc/fstab
+sudo systemctl daemon-reload
 sudo sed -i "s#options #options initoverlayfs=$boot_partition:/boot/initoverlayfs-$release.img rdinit=/usr/sbin/pre-initoverlayfs #g" /boot/loader/entries/$bls_file
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/bin/bash #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
