@@ -1,12 +1,11 @@
 #!/usr/bin/bash
 
 installkernel() {
-    hostonly='' instmods erofs
+    hostonly='' instmods erofs overlayfs
 }
 
 install() {
     inst /usr/sbin/pre-initoverlayfs
-    inst_dir /initoverlayfs
-    inst_dir /boot
+    inst_dir /boot /initerofs /overlay/upper /overlay/work /initoverlayfs
 }
 
