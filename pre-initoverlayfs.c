@@ -418,6 +418,9 @@ printd("Finish udevadm\n");
     if (mount("/dev/loop0", "/initerofs", "erofs", MS_RDONLY, NULL))
       print("mount(\"/dev/loop0\", \"/initerofs\", \"erofs\", MS_RDONLY, NULL) %d (%s)\n", errno, strerror(errno));
 
+    if (mount("overlay", "/initoverlayfs", "overlay", MS_RDONLY, "redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work"))
+      print("mount(\"overlay\", \"/initoverlayfs\", \"overlay\", MS_RDONLY, \"redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work\") %d (%s)\n", errno, strerror(errno));
+
     exec_path("bash");
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
