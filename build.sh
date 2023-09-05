@@ -80,5 +80,5 @@ sudo sed -i "s#options #options initoverlayfs=$boot_partition:/boot/initoverlayf
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/bin/bash #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
-sudo lsinitrd
+sudo lsinitrd | grep udev
 
