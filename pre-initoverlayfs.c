@@ -431,6 +431,9 @@ printd("Finish udevadm\n");
     if (mount("overlay", "/initoverlayfs", "overlay", 0, "redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work"))
       print("mount(\"overlay\", \"/initoverlayfs\", \"overlay\", 0, \"redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work\") %d (%s)\n", errno, strerror(errno));
 
+    if (mount("/boot", "/initoverlayfs/boot", "ext4", MS_MOVE, NULL))
+      print("mount(\"/boot\", \"/initoverlayfs/boot\", \"ext4\", MS_MOVE, NULL) %d (%s)\n", errno, strerror(errno));
+
     if (pivot_root("/initoverlayfs", "/"))
       print("pivot_root(\"initoverlayfs\", \"/\") %d (%s)\n", errno, strerror(errno));
 
