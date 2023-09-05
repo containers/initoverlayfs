@@ -67,7 +67,7 @@ initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo dracut -f --strip $initramfs
 sudo du -sh $initramfs
-sudo dracut -v -m "systemd kernel-modules udev-rules" -f --strip $initramfs -M -o nss-softokn --kernel-only
+sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd" -f --strip $initramfs -M -o nss-softokn --kernel-only
 sudo du -sh $initramfs
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
