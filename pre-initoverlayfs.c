@@ -364,6 +364,10 @@ static inline int log_open_kmsg(void) {
         return 0;
 }
 
+static inline int pivot_root(const char *new_root, const char *put_old) {
+  return syscall(SYS_pivot_root, new_root, put_old);
+}
+
 int main(void) {
   print("Start pre-initoverlayfs\n");
   if (mount("proc", "/proc", "proc", MS_NOSUID|MS_NOEXEC|MS_NODEV, NULL)) {
@@ -420,6 +424,9 @@ printd("Finish udevadm\n");
 
     if (mount("overlay", "/initoverlayfs", "overlay", MS_RDONLY, "redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work"))
       print("mount(\"overlay\", \"/initoverlayfs\", \"overlay\", MS_RDONLY, \"redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work\") %d (%s)\n", errno, strerror(errno));
+
+    if (pivot_root("/initoverlayfs", "/"))
+      print("pivot_root(\"initoverlayfs\", \"/\") %d (%s)\n", errno, strerror(errno));
 
     exec_path("bash");
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
