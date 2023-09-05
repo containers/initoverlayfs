@@ -67,7 +67,7 @@ initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo dracut -f --strip $initramfs -M
 sudo du -sh $initramfs
-sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd fs-lib pre-initramfs" -f --strip $initramfs -M -o nss-softokn
+sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd fs-lib pre-initramfs rootfs-block" -f --strip $initramfs -M -o nss-softokn
 sudo du -sh $initramfs
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
@@ -80,5 +80,5 @@ sudo sed -i "s#options #options initoverlayfs=$boot_partition:/boot/initoverlayf
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/bin/bash #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
-sudo lsinitrd | grep udev
+sudo lsinitrd
 
