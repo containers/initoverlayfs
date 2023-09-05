@@ -65,7 +65,8 @@ sudo losetup -fP /boot/initoverlayfs-$release.img
 # ln -s init /usr/sbin/pre-initoverlayfs
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
-sudo dracut -l -f --strip $initramfs # sudo dracut -m kernel-modules -f --strip a.img -M -o nss-softokn --kernel-only
+# sudo dracut -l -f --strip $initramfs
+sudo dracut -m kernel-modules -f --strip a.img -M -o nss-softokn --kernel-only
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
 boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
