@@ -415,8 +415,8 @@ printd("Finish udevadm\n");
 
     fork_exec_absolute("/usr/sbin/modprobe", "loop");
     fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
-    if (mount(file, "/initerofs", "erofs", MS_RDONLY, NULL))
-      print("mount(\"%s\", \"/initerofs\", \"erofs\", MS_RDONLY, NULL) failed with errno: %d\n", file, errno);
+    if (mount("/dev/loop0", "/initerofs", "erofs", 0, NULL))
+      print("mount(\"/dev/loop0\", \"/initerofs\", \"erofs\", 0, NULL) %d (%s)\n", errno, strerror(errno));
 
     exec_path("bash");
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
