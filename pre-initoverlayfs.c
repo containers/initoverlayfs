@@ -428,8 +428,8 @@ printd("Finish udevadm\n");
     if (mount("/dev/loop0", "/initerofs", "erofs", MS_RDONLY, NULL))
       print("mount(\"/dev/loop0\", \"/initerofs\", \"erofs\", MS_RDONLY, NULL) %d (%s)\n", errno, strerror(errno));
 
-    if (mount("overlay", "/initoverlayfs", "overlay", MS_RDONLY, "redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work"))
-      print("mount(\"overlay\", \"/initoverlayfs\", \"overlay\", MS_RDONLY, \"redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work\") %d (%s)\n", errno, strerror(errno));
+    if (mount("overlay", "/initoverlayfs", "overlay", 0, "redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work"))
+      print("mount(\"overlay\", \"/initoverlayfs\", \"overlay\", 0, \"redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/upper,workdir=/overlay/work\") %d (%s)\n", errno, strerror(errno));
 
     if (pivot_root("/initoverlayfs", "/"))
       print("pivot_root(\"initoverlayfs\", \"/\") %d (%s)\n", errno, strerror(errno));
