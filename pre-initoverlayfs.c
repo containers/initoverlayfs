@@ -434,7 +434,7 @@ printd("Finish udevadm\n");
     if (pivot_root("/initoverlayfs", "/"))
       print("pivot_root(\"initoverlayfs\", \"/\") %d (%s)\n", errno, strerror(errno));
 
-    exec_absolute_path("/sbin/init");
+//    exec_absolute_path("/sbin/init");
     exec_path("bash");
     printd("Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with errno: %d\n", part, errno);
   }
