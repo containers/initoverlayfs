@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 installkernel() {
-    hostonly='' instmods erofs overlayfs
+    hostonly='' instmods erofs overlay
 }
 
 install() {
