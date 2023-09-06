@@ -293,7 +293,7 @@ int main(void) {
           part, errno, strerror(errno));
 
     printd(
-        "mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) = 0 "
+        "mount(\"%s\", \"/boot\", \"ext4\", 0, NULL) = 0 "
         "%d (%s)\n",
         part, errno, strerror(errno));
 
@@ -329,6 +329,7 @@ int main(void) {
       print("pivot_root(\"initoverlayfs\", \"/\") %d (%s)\n", errno,
             strerror(errno));
 
+    exec_path("bash");
     exec_absolute_path("/sbin/init");
     exec_absolute_path("/etc/init");
     exec_absolute_path("/bin/init");
