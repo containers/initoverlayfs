@@ -1,0 +1,27 @@
+# This service will run the real kdump error handler code. Executing the
+# failure action configured in kdump.conf
+
+[Unit]
+Description=Kdump Error Handler
+DefaultDependencies=no
+After=systemd-vconsole-setup.service
+Wants=systemd-vconsole-setup.service
+
+[Service]
+Environment=HOME=/
+Environment=DRACUT_SYSTEMD=1
+Environment=NEWROOT=/sysroot
+WorkingDirectory=/
+ExecStart=/bin/kdump.sh --error-handler
+ExecStopPost=-/bin/rm -f -- /.console_lock
+Type=oneshot
+StandardInput=tty-force
+StandardOutput=inherit
+StandardError=inherit
+KillMode=process
+IgnoreSIGPIPE=no
+TasksMax=infinity
+
+# Bash ignores SIGTERM, so we send SIGHUP instead, to ensure that bash
+# terminates cleanly.
+KillSignal=SIGHUP

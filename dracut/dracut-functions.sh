@@ -37,6 +37,13 @@ str_starts() { [ "${1#"$2"*}" != "$1" ]; }
 # returns OK if $1 contains literal string $2 at the end, and isn't empty
 str_ends() { [ "${1%*"$2"}" != "$1" ]; }
 
+trim() {
+    local var="$*"
+    var="${var#"${var%%[![:space:]]*}"}" # remove leading whitespace characters
+    var="${var%"${var##*[![:space:]]}"}" # remove trailing whitespace characters
+    printf "%s" "$var"
+}
+
 # find a binary.  If we were not passed the full path directly,
 # search in the usual places to find the binary.
 find_binary() {
@@ -383,6 +390,7 @@ find_block_device() {
         } && return 0
     fi
     # fall back to /etc/fstab
+    [[ ! -f "$dracutsysrootdir"/etc/fstab ]] && return 1
 
     findmnt -e --fstab -v -n -o 'MAJ:MIN,SOURCE' --target "$_find_mpt" | {
         while read -r _majmin _dev || [ -n "$_dev" ]; do
@@ -433,6 +441,8 @@ find_mp_fstype() {
         } && return 0
     fi
 
+    [[ ! -f "$dracutsysrootdir"/etc/fstab ]] && return 1
+
     findmnt --fstab -e -v -n -o 'FSTYPE' --target "$1" | {
         while read -r _fs || [ -n "$_fs" ]; do
             [[ $_fs ]] || continue
@@ -473,6 +483,8 @@ find_dev_fstype() {
         } && return 0
     fi
 
+    [[ ! -f "$dracutsysrootdir"/etc/fstab ]] && return 1
+
     findmnt --fstab -e -v -n -o 'FSTYPE' --source "$_find_dev" | {
         while read -r _fs || [ -n "$_fs" ]; do
             [[ $_fs ]] || continue
@@ -499,6 +511,8 @@ find_mp_fsopts() {
         findmnt -e -v -n -o 'OPTIONS' --target "$1" 2> /dev/null && return 0
     fi
 
+    [[ ! -f "$dracutsysrootdir"/etc/fstab ]] && return 1
+
     findmnt --fstab -e -v -n -o 'OPTIONS' --target "$1"
 }
 
@@ -521,6 +535,8 @@ find_dev_fsopts() {
     if [[ $use_fstab != yes ]]; then
         findmnt -e -v -n -o 'OPTIONS' --source "$_find_dev" 2> /dev/null && return 0
     fi
+
+    [[ ! -f "$dracutsysrootdir"/etc/fstab ]] && return 1
 
     findmnt --fstab -e -v -n -o 'OPTIONS' --source "$_find_dev"
 }
@@ -722,7 +738,7 @@ check_kernel_config() {
 # 0 if the kernel module is either built-in or available
 # 1 if the kernel module is not enabled
 check_kernel_module() {
-    modprobe -S "$kernel" --dry-run "$1" &> /dev/null || return 1
+    modprobe -d "$dracutsysrootdir" -S "$kernel" --dry-run "$1" &> /dev/null || return 1
 }
 
 # get_cpu_vendor
