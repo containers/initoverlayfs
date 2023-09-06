@@ -179,21 +179,6 @@ static inline int pivot_root(const char* new_root, const char* put_old) {
 }
 
 static inline int losetup(char* loopdev, const char* file) {
-  struct loop_config loopconfig = {.fd = -1,
-                                   .block_size = 0,
-                                   .info = {.lo_device = 0,
-                                            .lo_inode = 0,
-                                            .lo_rdevice = 0,
-                                            .lo_offset = 0,
-                                            .lo_sizelimit = 0,
-                                            .lo_number = 0,
-                                            .lo_encrypt_type = LO_CRYPT_NONE,
-                                            .lo_encrypt_key_size = 0,
-                                            .lo_flags = LO_FLAGS_PARTSCAN,
-                                            .lo_file_name = "",
-                                            .lo_crypt_name = "",
-                                            .lo_encrypt_key = "",
-                                            .lo_init = {0, 0}}};
   autoclose const int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
   if (loopctlfd < 0) {
     print("open(\"/dev/loop-control\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n",
@@ -208,7 +193,6 @@ static inline int losetup(char* loopdev, const char* file) {
     return errno;
   }
 
-  strncat((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
   autoclose const int filefd = open(file, O_RDONLY | O_CLOEXEC);
   if (filefd < 0) {
     print("open(\"%s\", O_RDONLY| O_CLOEXEC) = %d %d (%s)\n", file, filefd,
@@ -216,7 +200,23 @@ static inline int losetup(char* loopdev, const char* file) {
     return errno;
   }
 
-  loopconfig.fd = filefd;
+  const struct loop_config loopconfig = {
+      .fd = filefd,
+      .block_size = 0,
+      .info = {.lo_device = 0,
+               .lo_inode = 0,
+               .lo_rdevice = 0,
+               .lo_offset = 0,
+               .lo_sizelimit = 0,
+               .lo_number = 0,
+               .lo_encrypt_type = LO_CRYPT_NONE,
+               .lo_encrypt_key_size = 0,
+               .lo_flags = LO_FLAGS_PARTSCAN,
+               .lo_file_name = "",
+               .lo_crypt_name = "",
+               .lo_encrypt_key = "",
+               .lo_init = {0, 0}}};
+  strncat((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
   sprintf(loopdev + DEV_LOOP_SIZE - 1, "%ld", devnr);
   autoclose const int loopfd = open(loopdev, O_RDWR | O_CLOEXEC);
   if (loopfd < 0) {
