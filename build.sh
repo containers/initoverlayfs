@@ -51,6 +51,10 @@ systemctl daemon-reload
 dracut -f --compress=pigz
 fi
 
+sudo dracut -f
+sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
+sudo du -sh $initramfs
+
 UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
 extract_initrd_into_initoverlayfs
 sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
@@ -67,9 +71,6 @@ initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
-dracut -f
-sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
-sudo du -sh $initramfs
 sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd pre-initramfs rootfs-block" -f --strip $initramfs -M -o nss-softokn
 sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 exit 1
