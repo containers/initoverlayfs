@@ -66,6 +66,7 @@ sudo losetup -fP /boot/initoverlayfs-$release.img
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo dracut -v -f --strip $initramfs -M
+sudo lsinitrd
 sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
 sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd pre-initramfs rootfs-block" -f --strip $initramfs -M -o nss-softokn
