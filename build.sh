@@ -51,7 +51,7 @@ systemctl daemon-reload
 dracut -f --compress=pigz
 fi
 
-sudo dracut -f
+sudo dracut -v -f --strip -f
 sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
 
