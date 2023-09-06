@@ -286,9 +286,9 @@ int main(void) {
     strtok(initoverlayfs, ":");
     const char* file = strtok(NULL, ":");
     const char* part = initoverlayfs;
-    if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
+    if (mount(part, "/boot", "ext4", 0, NULL))
       print(
-          "mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) "
+          "mount(\"%s\", \"/boot\", \"ext4\", 0, NULL) "
           "%d (%s)\n",
           part, errno, strerror(errno));
 
