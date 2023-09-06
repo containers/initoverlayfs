@@ -209,9 +209,9 @@ static inline int losetup(char* loopdev, const char* file) {
   }
 
   strncat((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
-  autoclose const int filefd = open(file, O_RDWR | O_CLOEXEC);
+  autoclose const int filefd = open(file, O_RDONLY | O_CLOEXEC);
   if (filefd < 0) {
-    print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", file, filefd,
+    print("open(\"%s\", O_RDONLY| O_CLOEXEC) = %d %d (%s)\n", file, filefd,
           errno, strerror(errno));
     return errno;
   }
@@ -328,8 +328,6 @@ int main(void) {
     if (pivot_root("/initoverlayfs", "/"))
       print("pivot_root(\"initoverlayfs\", \"/\") %d (%s)\n", errno,
             strerror(errno));
-
-    fclose(kmsg_f);
 
     exec_absolute_path("/sbin/init");
     exec_absolute_path("/etc/init");
