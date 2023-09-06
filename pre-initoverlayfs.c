@@ -3,6 +3,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <linux/loop.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +16,10 @@
 #include <unistd.h>
 
 #define autofree __attribute__((cleanup(cleanup_free)))
+#define autoclose __attribute__((cleanup(cleanup_close)))
+
+#define DEV_LOOP "/dev/loop"
+#define DEV_LOOP_SIZE sizeof(DEV_LOOP)
 
 #define print(...)                  \
   do {                              \
@@ -92,6 +97,12 @@ static inline void cleanup_free(void* p) {
   free(*pp);
 }
 
+static inline void cleanup_close(const int* p) {
+  const int pp = *p;
+  if (pp > 2)  // Greater than 2 to protect stdin, stdout and stderr
+    close(pp);
+}
+
 static inline char* read_proc_cmdline(void) {
   FILE* f = fopen("/proc/cmdline", "r");
   char* cmdline = NULL;
@@ -167,6 +178,62 @@ static inline int pivot_root(const char* new_root, const char* put_old) {
   return syscall(SYS_pivot_root, new_root, put_old);
 }
 
+static inline int losetup(char* loopdev, const char* file) {
+  struct loop_config loopconfig = {.fd = -1,
+                                   .block_size = 0,
+                                   .info = {.lo_device = 0,
+                                            .lo_inode = 0,
+                                            .lo_rdevice = 0,
+                                            .lo_offset = 0,
+                                            .lo_sizelimit = 0,
+                                            .lo_number = 0,
+                                            .lo_encrypt_type = LO_CRYPT_NONE,
+                                            .lo_encrypt_key_size = 0,
+                                            .lo_flags = LO_FLAGS_PARTSCAN,
+                                            .lo_file_name = "",
+                                            .lo_crypt_name = "",
+                                            .lo_encrypt_key = "",
+                                            .lo_init = {0, 0}}};
+  autoclose const int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
+  if (loopctlfd < 0) {
+    print("open(\"/dev/loop-control\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n",
+          loopctlfd, errno, strerror(errno));
+    return errno;
+  }
+
+  const long devnr = ioctl(loopctlfd, LOOP_CTL_GET_FREE);
+  if (devnr < 0) {
+    print("ioctl(%d, LOOP_CTL_GET_FREE) = %ld %d (%s)\n", loopctlfd, devnr,
+          errno, strerror(errno));
+    return errno;
+  }
+
+  strncat((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
+  autoclose const int filefd = open(file, O_RDWR | O_CLOEXEC);
+  if (filefd < 0) {
+    print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", file, filefd,
+          errno, strerror(errno));
+    return errno;
+  }
+
+  loopconfig.fd = filefd;
+  sprintf(loopdev + DEV_LOOP_SIZE, "%ld", devnr);
+  autoclose const int loopfd = open(loopdev, O_RDWR | O_CLOEXEC);
+  if (loopfd < 0) {
+    print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", loopdev, loopfd,
+          errno, strerror(errno));
+    return errno;
+  }
+
+  if (ioctl(loopfd, LOOP_CONFIGURE, &loopconfig) < 0) {
+    print("ioctl(%d, LOOP_CONFIGURE, %p) %d (%s)\n", loopfd, (void*)&loopconfig,
+          errno, strerror(errno));
+    return errno;
+  }
+
+  return 0;
+}
+
 int main(void) {
   printd("Start pre-initoverlayfs\n");
   if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
@@ -231,7 +298,12 @@ int main(void) {
         part, errno, strerror(errno));
 
     fork_exec_absolute("/usr/sbin/modprobe", "loop");
-    fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
+
+    char dev_loop[16] = DEV_LOOP;
+    if (!losetup(dev_loop, file))
+      print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, file, errno,
+            strerror(errno));
+    // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
     if (mount("/dev/loop0", "/initerofs", "erofs", MS_RDONLY, NULL))
       print(
           "mount(\"/dev/loop0\", \"/initerofs\", \"erofs\", MS_RDONLY, NULL) "
