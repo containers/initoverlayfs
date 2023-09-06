@@ -18,9 +18,6 @@
 #define autofree __attribute__((cleanup(cleanup_free)))
 #define autoclose __attribute__((cleanup(cleanup_close)))
 
-#define DEV_LOOP "/dev/loop"
-#define DEV_LOOP_SIZE sizeof(DEV_LOOP)
-
 #define print(...)                  \
   do {                              \
     if (kmsg_f) {                   \
@@ -216,8 +213,8 @@ static inline int losetup(char* loopdev, const char* file) {
                .lo_crypt_name = "",
                .lo_encrypt_key = "",
                .lo_init = {0, 0}}};
-  strncat((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
-  sprintf(loopdev + DEV_LOOP_SIZE - 1, "%ld", devnr);
+  strncpy((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
+  sprintf(loopdev, "/dev/loop%ld", devnr);
   autoclose const int loopfd = open(loopdev, O_RDWR | O_CLOEXEC);
   if (loopfd < 0) {
     print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", loopdev, loopfd,
@@ -299,7 +296,7 @@ int main(void) {
 
     fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
-    char dev_loop[16] = DEV_LOOP;
+    char dev_loop[16];
     if (losetup(dev_loop, file))
       print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, file, errno,
             strerror(errno));
