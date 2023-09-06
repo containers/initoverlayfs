@@ -6,6 +6,6 @@ installkernel() {
 
 install() {
     inst /usr/sbin/pre-initoverlayfs
-    inst_dir /boot /initerofs /overlay/upper /overlay/work /initoverlayfs
+    inst_dir /boot /initerofs /overlay /overlay/upper /overlay/work /initoverlayfs
 }
 
