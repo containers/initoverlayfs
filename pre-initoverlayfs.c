@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <assert.h>
 #include <dirent.h>
 #include <err.h>
@@ -16,213 +14,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define STATFS_RAMFS_MAGIC 0x858458f6
-#define STATFS_TMPFS_MAGIC 0x01021994
-
-#ifdef __GNUC__
-#define F_TYPE_EQUAL(a, b) (a == (__typeof__(a))b)
-#else
-#define F_TYPE_EQUAL(a, b) (a == (__SWORD_TYPE)b)
-#endif
-
 #define autofree __attribute__((cleanup(cleanup_free)))
-
-static inline void cleanup_free(void* p) {
-  void** pp = (void**)p;
-  free(*pp);
-}
-
-#if 0
-static int switchroot(const char* newroot) {
-  /*  Don't try to unmount the old "/", there's no way to do it. */
-  const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
-  int i;
-  int cfd = -1;
-  struct stat newroot_stat, oldroot_stat, sb;
-
-  if (stat("/", &oldroot_stat) != 0) {
-    warn("stat of %s failed", "/");
-    return -1;
-  }
-
-  if (stat(newroot, &newroot_stat) != 0) {
-    warn("stat of %s failed", newroot);
-    return -1;
-  }
-
-  for (i = 0; umounts[i] != NULL; i++) {
-    char newmount[PATH_MAX];
-
-    snprint(newmount, sizeof(newmount), "%s%s", newroot, umounts[i]);
-
-    if ((stat(umounts[i], &sb) == 0) && sb.st_dev == oldroot_stat.st_dev) {
-      /* mount point to move seems to be a normal directory or stat failed */
-      continue;
-    }
-
-    if ((stat(newmount, &sb) != 0) || (sb.st_dev != newroot_stat.st_dev)) {
-      /* mount point seems to be mounted already or stat failed */
-      umount2(umounts[i], MNT_DETACH);
-      continue;
-    }
-
-    if (mount(umounts[i], newmount, NULL, MS_MOVE, NULL) < 0) {
-      warn("failed to mount moving %s to %s", umounts[i], newmount);
-      warnx("forcing unmount of %s", umounts[i]);
-      umount2(umounts[i], MNT_FORCE);
-    }
-
-    print("succeeeded to mount moving %s to %s", umounts[i], newmount);
-  }
-
-  if (chdir(newroot)) {
-    warn("failed to change directory to %s", newroot);
-    return -1;
-  }
-
-  cfd = open("/", O_RDONLY);
-  if (cfd < 0) {
-    warn("cannot open %s", "/");
-    goto fail;
-  }
-
-  if (false) {
-    if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
-      warn("failed final mount moving %s to /", newroot);
-      goto fail;
-    }
-  }
-
-  if (chroot(".")) {
-    warn("failed to change root");
-    goto fail;
-  }
-
-  if (chdir("/")) {
-    warn("cannot change directory to %s", "/");
-    goto fail;
-  }
-
-fail:
-  if (cfd >= 0)
-    close(cfd);
-  return -1;
-}
-
-static int try_to_run_init_process(const char* init_filename) {
-  return execl(init_filename, init_filename, NULL);
-}
-
-static int pivot_root(const char* new_root, const char* put_old) {
-  return syscall(__NR_pivot_root, new_root, put_old);
-}
-
-#ifndef UNLOCK_OVERLAYDIR
-#define UNLOCK_OVERLAYDIR "/run/initoverlayfs"
-#endif
-
-static int mount_overlayfs(void) {
-  if (mount("overlay", UNLOCK_OVERLAYDIR, "overlay", MS_RDONLY,
-            "lowerdir=" UNLOCK_OVERLAYDIR ",upperdir=" UNLOCK_OVERLAYDIR
-            "/upper,workdir=" UNLOCK_OVERLAYDIR "/work") < 0)
-    err(1, "mount");
-
-  return 0;
-}
-#endif
-
-static inline char* read_proc_cmdline(void) {
-  FILE* f = fopen("/proc/cmdline", "r");
-  char* cmdline = NULL;
-  size_t len;
-
-  if (!f)
-    goto out;
-
-  /* Note that /proc/cmdline will not end in a newline, so getline
-   * will fail unelss we provide a length.
-   */
-  if (getline(&cmdline, &len, f) < 0)
-    goto out;
-  /* ... but the length will be the size of the malloc buffer, not
-   * strlen().  Fix that.
-   */
-  len = strlen(cmdline);
-
-  if (cmdline[len - 1] == '\n')
-    cmdline[len - 1] = '\0';
-
-out:
-  if (f)
-    fclose(f);
-
-  return cmdline;
-}
-
-#if 0
-static inline char* read_proc_cmdline_key(const char* key) {
-  char* cmdline = NULL;
-  const char* iter;
-  char* ret = NULL;
-  size_t key_len = strlen(key);
-
-  cmdline = read_proc_cmdline();
-  if (!cmdline)
-    err(EXIT_FAILURE, "failed to read /proc/cmdline");
-
-  iter = cmdline;
-  while (iter != NULL) {
-    const char* next = strchr(iter, ' ');
-    const char* next_nonspc = next;
-    while (next_nonspc && *next_nonspc == ' ')
-      next_nonspc += 1;
-    if (strncmp(iter, key, key_len) == 0 && iter[key_len] == '=') {
-      const char* start = iter + key_len + 1;
-      if (next)
-        ret = strndup(start, next - start);
-      else
-        ret = strdup(start);
-      break;
-    }
-    iter = next_nonspc;
-  }
-
-  free(cmdline);
-  return ret;
-}
-#endif
-
-static inline char* find_proc_cmdline_key(const char* cmdline,
-                                          const char* key) {
-  const size_t key_len = strlen(key);
-  for (const char* iter = cmdline; iter;) {
-    const char* next = strchr(iter, ' ');
-    if (strncmp(iter, key, key_len) == 0 && iter[key_len] == '=') {
-      const char* start = iter + key_len + 1;
-      if (next)
-        return strndup(start, next - start);
-
-      return strdup(start);
-    }
-
-    if (next)
-      next += strspn(next, " ");
-
-    iter = next;
-  }
-
-  return NULL;
-}
-
-static inline bool string_contains(const char* cmdline, const char c) {
-  for (; cmdline; ++cmdline)
-    if (*cmdline == c)
-      return true;
-
-  return false;
-}
-
-static FILE* kmsg_f = 0;
 
 #define print(...)                  \
   do {                              \
@@ -295,62 +87,70 @@ static FILE* kmsg_f = 0;
     execl(exe, exe, (char*)NULL);   \
   } while (0)
 
-#if 0
-static inline int print_dev(void)
-{
- struct dirent *dp;
- DIR *dfd;
- char *dir = "/dev";
- if ((dfd = opendir(dir)) == NULL)
- {
-  print("Can't open %s\n", dir);
-  return 0;
- }
-
- while ((dp = readdir(dfd)) != NULL)
- {
-  printd("/dev/%s\n", dp->d_name);
- }
-
-  return 0;
+static inline void cleanup_free(void* p) {
+  void** pp = (void**)p;
+  free(*pp);
 }
 
-static inline int fd_move_above_stdio(int fd) {
-        int flags, copy;
+static inline char* read_proc_cmdline(void) {
+  FILE* f = fopen("/proc/cmdline", "r");
+  char* cmdline = NULL;
+  size_t len;
 
-        /* Moves the specified file descriptor if possible out of the range [0…2], i.e. the range of
-         * stdin/stdout/stderr. If it can't be moved outside of this range the original file descriptor is
-         * returned. This call is supposed to be used for long-lasting file descriptors we allocate in our code that
-         * might get loaded into foreign code, and where we want ensure our fds are unlikely used accidentally as
-         * stdin/stdout/stderr of unrelated code.
-         *
-         * Note that this doesn't fix any real bugs, it just makes it less likely that our code will be affected by
-         * buggy code from others that mindlessly invokes 'fprint(stderr, …' or similar in places where stderr has
-         * been closed before.
-         *
-         * This function is written in a "best-effort" and "least-impact" style. This means whenever we encounter an
-         * error we simply return the original file descriptor, and we do not touch errno. */
+  if (!f)
+    goto out;
 
-        if (fd < 0 || fd > 2)
-                return fd;
+  /* Note that /proc/cmdline will not end in a newline, so getline
+   * will fail unelss we provide a length.
+   */
+  if (getline(&cmdline, &len, f) < 0)
+    goto out;
+  /* ... but the length will be the size of the malloc buffer, not
+   * strlen().  Fix that.
+   */
+  len = strlen(cmdline);
 
-        flags = fcntl(fd, F_GETFD, 0);
-        if (flags < 0)
-                return fd;
+  if (cmdline[len - 1] == '\n')
+    cmdline[len - 1] = '\0';
 
-        if (flags & FD_CLOEXEC)
-                copy = fcntl(fd, F_DUPFD_CLOEXEC, 3);
-        else
-                copy = fcntl(fd, F_DUPFD, 3);
-        if (copy < 0)
-                return fd;
+out:
+  if (f)
+    fclose(f);
 
-        assert(copy > 2);
-
-        (void) close(fd);
-        return copy;
+  return cmdline;
 }
-#endif
+
+static inline char* find_proc_cmdline_key(const char* cmdline,
+                                          const char* key) {
+  const size_t key_len = strlen(key);
+  for (const char* iter = cmdline; iter;) {
+    const char* next = strchr(iter, ' ');
+    if (strncmp(iter, key, key_len) == 0 && iter[key_len] == '=') {
+      const char* start = iter + key_len + 1;
+      if (next)
+        return strndup(start, next - start);
+
+      return strdup(start);
+    }
+
+    if (next)
+      next += strspn(next, " ");
+
+    iter = next;
+  }
+
+  return NULL;
+}
+
+static inline bool string_contains(const char* cmdline, const char c) {
+  for (; cmdline; ++cmdline)
+    if (*cmdline == c)
+      return true;
+
+  return false;
+}
+
+static FILE* kmsg_f = 0;
 
 static inline int log_open_kmsg(void) {
   kmsg_f = fopen("/dev/kmsg", "w");
@@ -368,74 +168,67 @@ static inline int pivot_root(const char* new_root, const char* put_old) {
 }
 
 int main(void) {
-  print("Start pre-initoverlayfs\n");
+  printd("Start pre-initoverlayfs\n");
   if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
     print(
-        "mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID|MS_NOEXEC|MS_NODEV, "
-        "NULL) failed with errno: %d\n",
-        errno);
+        "mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID | MS_NOEXEC | "
+        "MS_NODEV, "
+        "NULL) %d (%s)\n",
+        errno, strerror(errno));
     return errno;
   }
 
   if (mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
     print(
-        "mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID|MS_NOEXEC|MS_NODEV, "
-        "NULL) failed with errno: %d\n",
-        errno);
+        "mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID | MS_NOEXEC | "
+        "MS_NODEV, "
+        "NULL) %d (%s)\n",
+        errno, strerror(errno));
     return errno;
   }
 
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID | MS_STRICTATIME,
             "mode=0755,size=4m")) {
     print(
-        "mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID|MS_STRICTATIME, "
-        "NULL) failed with errno: %d\n",
-        errno);
+        "mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID | "
+        "MS_STRICTATIME, "
+        "NULL) %d (%s)\n",
+        errno, strerror(errno));
     return errno;
   }
 
-#if 0
-  print_dev();
-#endif
-
   log_open_kmsg();
-  printd("Start systemd-udevd\n");
+  printd("log_open_kmsg()\n");
   fork_exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
-  printd("Start udevadm\n");
+  printd("Finish systemd-udevd\n");
   fork_exec_path("udevadm", "trigger", "--type=devices", "--action=add",
                  "--subsystem-match=module", "--subsystem-match=block",
                  "--subsystem-match=virtio", "--subsystem-match=pci",
                  "--subsystem-match=nvme", "-w");
   printd("Finish udevadm\n");
 
-  printd("Start read_proc_cmdline\n");
   autofree char* cmdline = read_proc_cmdline();
-  printd("Finish read_proc_cmdline\n");
-  if (!cmdline) {
-    printd("cmdline: NULL\n");
-  }
+  printd("read_proc_cmdline() = \"%s\"\n", cmdline ? cmdline : "(nil)");
 
-  printd("cmdline: \"%s\"\n", cmdline);
   autofree char* initoverlayfs =
       find_proc_cmdline_key(cmdline, "initoverlayfs");
-
-  printd("cmdline: \"%s\" initoverlayfs: \"%s\"\n", cmdline,
-         initoverlayfs ? initoverlayfs : "NULL");
+  printd("find_proc_cmdline_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
+         cmdline ? cmdline : "(nil)", initoverlayfs ? initoverlayfs : "(nil)");
 
   if (string_contains(initoverlayfs, ':')) {
     strtok(initoverlayfs, ":");
     const char* file = strtok(NULL, ":");
     const char* part = initoverlayfs;
-    printd(
-        "Start mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with "
-        "errno: %d\n",
-        part, errno);
-
     if (mount(part, "/boot", "ext4", MS_RDONLY, NULL))
       print(
-          "mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed with "
-          "errno: %d\n",
-          part, errno);
+          "mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) "
+          "%d (%s)\n",
+          part, errno, strerror(errno));
+
+    printd(
+        "mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) = 0 "
+        "%d (%s)\n",
+        part, errno, strerror(errno));
 
     fork_exec_absolute("/usr/sbin/modprobe", "loop");
     fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
@@ -464,56 +257,17 @@ int main(void) {
       print("pivot_root(\"initoverlayfs\", \"/\") %d (%s)\n", errno,
             strerror(errno));
 
+    fclose(kmsg_f);
+
     exec_absolute_path("/sbin/init");
-    //    exec_path("bash");
-    printd(
-        "Finish mount(\"%s\", \"/boot\", \"ext4\", MS_RDONLY, NULL) failed "
-        "with errno: %d\n",
-        part, errno);
+    exec_absolute_path("/etc/init");
+    exec_absolute_path("/bin/init");
+    exec_absolute_path("/bin/sh");
+
+    return errno;
   }
 
   fclose(kmsg_f);
-
-#if 0
-  autofree char* device;
-  asprint(&device, "/dev/disk/by-partuuid/%s", initoverlayfs_uuid);
-  mount(device, UNLOCK_OVERLAYDIR, NULL, 0, NULL);
-
-  const int ret = mount_overlayfs();
-  if (ret) {
-    warn("failed to mount overlayfs: %d", ret);
-    return errno;
-  }
-
-  if (false) {
-    errno = 0;
-    if (pivot_root("/initoverlayfs", "/")) {
-      warn("failed to pivot_root");
-    }
-  }
-
-  if (switchroot(UNLOCK_OVERLAYDIR)) {
-    warn("failed to switchroot");
-    return errno;
-  }
-
-  if (false) {
-    if (chroot("/initoverlayfs")) {
-      warn("failed to chroot");
-      return errno;
-    }
-  }
-
-  // to-do parse 2init= karg also possibly
-  try_to_run_init_process("/sbin/init");
-  try_to_run_init_process("/etc/init");
-  try_to_run_init_process("/bin/init");
-  try_to_run_init_process("/bin/sh");
-
-  // If you reach here you have failed, exec should have taken control of this
-  // process
-  warn("failed to exec init process");
-#endif
 
   return errno;
 }
