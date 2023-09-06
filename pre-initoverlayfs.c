@@ -217,7 +217,7 @@ static inline int losetup(char* loopdev, const char* file) {
   }
 
   loopconfig.fd = filefd;
-  sprintf(loopdev + DEV_LOOP_SIZE, "%ld", devnr);
+  sprintf(loopdev + DEV_LOOP_SIZE - 1, "%ld", devnr);
   autoclose const int loopfd = open(loopdev, O_RDWR | O_CLOEXEC);
   if (loopfd < 0) {
     print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", loopdev, loopfd,
