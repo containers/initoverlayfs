@@ -300,7 +300,7 @@ int main(void) {
     fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
     char dev_loop[16] = DEV_LOOP;
-    if (!losetup(dev_loop, file))
+    if (losetup(dev_loop, file))
       print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, file, errno,
             strerror(errno));
     // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
