@@ -57,6 +57,7 @@ cd ~/git/initoverlayfs
 sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
 sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
 
+sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo dracut -v -f --strip -f -M
 sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
@@ -71,7 +72,6 @@ sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
 sudo losetup -fP /boot/initoverlayfs-$release.img
 # ln -s init /usr/sbin/pre-initoverlayfs
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
-sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
 sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd pre-initramfs rootfs-block" -f --strip $initramfs -M -o nss-softokn
