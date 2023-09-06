@@ -51,7 +51,10 @@ systemctl daemon-reload
 dracut -f --compress=pigz
 fi
 
-sudo dracut -v -f --strip -f
+sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
+sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
+
+sudo dracut -v -f --strip -f -M
 sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
 
@@ -59,15 +62,13 @@ UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
 extract_initrd_into_initoverlayfs
 sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 cd ~/git/initoverlayfs
-sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
-sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
 # sudo valgrind /usr/sbin/pre-initoverlayfs
 # sudo ln -sf pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
 # sudo ln -sf usr/bin/pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/init
 sudo mkfs.erofs /boot/initoverlayfs-$release.img /run/initoverlayfs/
 sudo losetup -fP /boot/initoverlayfs-$release.img
 # ln -s init /usr/sbin/pre-initoverlayfs
-initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | head -n1)
+initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
