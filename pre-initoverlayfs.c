@@ -90,14 +90,12 @@
   } while (0)
 
 static inline void cleanup_free(void* p) {
-  void** pp = (void**)p;
-  free(*pp);
+  free(*(void**)p);
 }
 
-static inline void cleanup_close(const int* p) {
-  const int pp = *p;
-  if (pp > 2)  // Greater than 2 to protect stdin, stdout and stderr
-    close(pp);
+static inline void cleanup_close(const int* fd) {
+  if (*fd > 2)  // Greater than 2 to protect stdin, stdout and stderr
+    close(*fd);
 }
 
 static inline char* read_proc_cmdline(void) {
