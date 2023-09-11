@@ -228,6 +228,7 @@ static inline int losetup(char* loopdev, const char* file) {
 
 /* remove all files/directories below dirName -- don't cross mountpoints */
 static inline int recursiveRemove(int fd) {
+  return 0;
   struct stat rb;
   DIR* dir;
   int rc = -1;
