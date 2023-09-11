@@ -442,20 +442,28 @@ int main(void) {
   printd("find_proc_cmdline_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
          cmdline ? cmdline : "(nil)", initoverlayfs ? initoverlayfs : "(nil)");
 
+  autofree char* initoverlayfstype =
+      find_proc_cmdline_key(cmdline, "initoverlayfstype");
+  printd("find_proc_cmdline_key(\"%s\", \"initoverlayfstype\") = \"%s\"\n",
+         cmdline ? cmdline : "(nil)", initoverlayfstype ? initoverlayfstype : "(nil)");
+
   if (string_contains(initoverlayfs, ':')) {
     strtok(initoverlayfs, ":");
     const char* file = strtok(NULL, ":");
     const char* part = initoverlayfs;
-    if (mount(part, "/boot", "ext4", 0, NULL))
+    strtok(initoverlayfstype, ":");
+    const char* filefstype = strtok(NULL, ":");
+    const char* partfstype = initoverlayfstype;
+    if (mount(part, "/boot", partfstype, 0, NULL))
       print(
-          "mount(\"%s\", \"/boot\", \"ext4\", 0, NULL) "
+          "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
           "%d (%s)\n",
-          part, errno, strerror(errno));
+          part, partfstype, errno, strerror(errno));
 
     printd(
-        "mount(\"%s\", \"/boot\", \"ext4\", 0, NULL) = 0 "
+        "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) = 0 "
         "%d (%s)\n",
-        part, errno, strerror(errno));
+        part, partfstype, errno, strerror(errno));
 
     fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
@@ -464,11 +472,11 @@ int main(void) {
       print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, file, errno,
             strerror(errno));
     // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
-    if (mount("/dev/loop0", "/initerofs", "erofs", MS_RDONLY, NULL))
+    if (mount("/dev/loop0", "/initerofs", filefstype, MS_RDONLY, NULL))
       print(
-          "mount(\"/dev/loop0\", \"/initerofs\", \"erofs\", MS_RDONLY, NULL) "
+          "mount(\"/dev/loop0\", \"/initerofs\", \"%s\", MS_RDONLY, NULL) "
           "%d (%s)\n",
-          errno, strerror(errno));
+          filefstype, errno, strerror(errno));
 
     if (mount("overlay", "/initoverlayfs", "overlay", 0,
               "redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/"
