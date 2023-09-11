@@ -488,7 +488,7 @@ int main(void) {
     if (switchroot("/initoverlayfs"))
       print("switchroot(\"initoverlayfs\") %d (%s)\n", errno, strerror(errno));
 
-    exec_path("bash");
+//    exec_path("bash");
     exec_absolute_path("/sbin/init");
     exec_absolute_path("/etc/init");
     exec_absolute_path("/bin/init");
