@@ -228,7 +228,6 @@ static inline int losetup(char* loopdev, const char* file) {
 
 /* remove all files/directories below dirName -- don't cross mountpoints */
 static inline int recursiveRemove(int fd) {
-  return 0;
   struct stat rb;
   DIR* dir;
   int rc = -1;
@@ -259,7 +258,8 @@ static inline int recursiveRemove(int fd) {
       break; /* end of directory */
     }
 
-    if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
+    if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, "..") ||
+        !strcmp(d->d_name, "initoverlayfs"))
       continue;
 #ifdef _DIRENT_HAVE_D_TYPE
     if (d->d_type == DT_DIR || d->d_type == DT_UNKNOWN)
