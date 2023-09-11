@@ -84,7 +84,7 @@ fi
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
-sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd pre-initramfs rootfs-block" -f --strip $initramfs -M -o nss-softokn
+sudo dracut -v -m "systemd kernel-modules udev-rules dracut-systemd pre-initramfs" -f --strip $initramfs -M -o nss-softokn
 sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
