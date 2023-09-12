@@ -3,15 +3,15 @@
 set -ex
 
 convert_file() {
-set +x
-
   file="$1"
 
   touch $file.bak
 
+set +x
+
   while read j; do
-    first_word=$(echo $j | awk '{print $1}')
-    rest_of_line=$(echo $j | sed 's/[^ ]* //')
+    first_word=$(echo "$j" | awk '{print $1}')
+    rest_of_line=$(echo "$j" | sed 's/[^ ]* //')
     difference=$(echo  "$first_word - $preboot_time" | bc)
     echo "$difference $rest_of_line" >> $file.bak
   done < $file
@@ -23,9 +23,9 @@ pkill qemu || true
 
 for i in {1..64}; do
   cd
+  wait
   cp f38.qcow2.bak f38.qcow2
   preboot_time=$(date +%s.%N)
-  wait
   ./runvm --nographics f38.qcow2 > /dev/null 2>&1 &
   cd -
   sleep 32
