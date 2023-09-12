@@ -431,7 +431,7 @@ int main(void) {
   fork_exec_path("udevadm", "trigger", "--type=devices", "--action=add",
                  "--subsystem-match=module", "--subsystem-match=block",
                  "--subsystem-match=virtio", "--subsystem-match=pci",
-                 "--subsystem-match=nvme", "-w");
+                 "--subsystem-match=nvme");
   printd("Finish udevadm\n");
 
   autofree char* cmdline = read_proc_cmdline();
