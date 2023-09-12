@@ -473,18 +473,18 @@ int main(void) {
       print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, file, errno,
             strerror(errno));
     // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
-    if (mount("/dev/loop0", "/initerofs", filefstype, MS_RDONLY, NULL))
+    if (mount("/dev/loop0", "/initrofs", filefstype, MS_RDONLY, NULL))
       print(
-          "mount(\"/dev/loop0\", \"/initerofs\", \"%s\", MS_RDONLY, NULL) "
+          "mount(\"/dev/loop0\", \"/initrofs\", \"%s\", MS_RDONLY, NULL) "
           "%d (%s)\n",
           filefstype, errno, strerror(errno));
 
     if (mount("overlay", "/initoverlayfs", "overlay", 0,
-              "redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/"
+              "redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/"
               "upper,workdir=/overlay/work"))
       print(
           "mount(\"overlay\", \"/initoverlayfs\", \"overlay\", 0, "
-          "\"redirect_dir=on,lowerdir=/initerofs,upperdir=/overlay/"
+          "\"redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/"
           "upper,workdir=/overlay/work\") %d (%s)\n",
           errno, strerror(errno));
 
