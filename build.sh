@@ -14,7 +14,7 @@ extract_initrd_into_initoverlayfs() {
 
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
-    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zcat | sudo cpio -ivd
+    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | lz4cat | sudo cpio -ivd
   else
     fs="ext4"
     dd if=/dev/zero of=/boot/initoverlayfs-$release.img bs=64M count=1
