@@ -27,7 +27,7 @@ convert_file() {
 
 pkill qemu || true
 
-if false; then
+if true; then
 for i in {1..64}; do
   cd ~/git/sample-images/osbuild-manifests
   wait
@@ -43,8 +43,8 @@ for i in {1..64}; do
   ssh -p2222 root@127.0.0.1 "init 0" || true # > /dev/null 2>&1
 
   cd ~/git/sample-images/osbuild-manifests
-  preboot_time=$(date +%s.%N)
   wait
+  preboot_time=$(date +%s.%N)
   taskset -c 4-7 ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
   cd -
   sleep 32
@@ -68,8 +68,8 @@ for i in {1..64}; do
   ssh -p2222 root@127.0.0.1 "init 0" || true # > /dev/null 2>&1
 
   cd ~/git/sample-images/osbuild-manifests
-  preboot_time=$(date +%s.%N)
   wait
+  preboot_time=$(date +%s.%N)
   taskset -c 4-7 ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
   cd -
   sleep 32

@@ -70,7 +70,6 @@ sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
 du -sh /boot/initramfs*
 sudo dracut --lz4 -v -f --strip -f -M
-exit 0
 # sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 
 UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
