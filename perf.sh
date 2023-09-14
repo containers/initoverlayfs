@@ -39,7 +39,8 @@ for i in {1..64}; do
   ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > legacy$i.txt
   convert_file legacy$i.txt &
   git-push.sh -p2222 root@127.0.0.1
-  ssh -p2222 root@127.0.0.1 "cd ~/git/initoverlayfs && ./build.sh"
+  size="$(echo "$i * 4" | bc)M"
+  ssh -p2222 root@127.0.0.1 "cd ~/git/initoverlayfs && ./build.sh $size"
   ssh -p2222 root@127.0.0.1 "init 0" || true # > /dev/null 2>&1
 
   cd ~/git/sample-images/osbuild-manifests

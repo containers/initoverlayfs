@@ -69,6 +69,7 @@ sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra 
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
 du -sh /boot/initramfs*
+sudo dd if=/dev/urandom of=/usr/bin/random-file count=1 bs="$1"
 sudo dracut --lz4 -v -f --strip -f -M
 # sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 
