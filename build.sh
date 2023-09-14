@@ -89,6 +89,7 @@ sudo du -sh $initramfs
 #sudo lsinitrd
 sudo du -sh /boot/initramfs*
 sudo dracut --lz4 -v -m "systemd kernel-modules udev-rules pre-initramfs" -f --strip $initramfs -M -o nss-softokn
+sudo du -sh /boot/initramfs*
 #sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
