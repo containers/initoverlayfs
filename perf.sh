@@ -1,6 +1,14 @@
 #!/bin/bash
 
-set -ex
+set -e
+
+failure() {
+  local lineno=$1
+  local msg=$2
+  echo "Failed at $lineno: $msg"
+}
+
+trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
 
 convert_file() {
   file="$1"
