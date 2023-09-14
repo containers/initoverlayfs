@@ -57,6 +57,7 @@ cd /usr/lib/systemd/system/sysinit.target.wants/
 ln -s ../mount-sysroot.service
 cd -
 systemctl daemon-reload
+du -sh /boot/initramfs*
 dracut -f --lz4
 fi
 
@@ -67,6 +68,7 @@ sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra 
 
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
+du -sh /boot/initramfs*
 sudo dracut --lz4 -v -f --strip -f -M
 # sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 
@@ -85,6 +87,7 @@ initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
 sudo du -sh $initramfs
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
+sudo du -sh /boot/initramfs*
 sudo dracut --lz4 -v -m "systemd kernel-modules udev-rules pre-initramfs" -f --strip $initramfs -M -o nss-softokn
 #sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
