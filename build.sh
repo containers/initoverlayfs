@@ -57,7 +57,7 @@ cd /usr/lib/systemd/system/sysinit.target.wants/
 ln -s ../mount-sysroot.service
 cd -
 systemctl daemon-reload
-dracut -f --compress=pigz
+dracut -f --lz4
 fi
 
 cd ~/git/initoverlayfs
@@ -67,7 +67,7 @@ sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra 
 
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
-sudo dracut -v -f --strip -f -M
+sudo dracut --lz4 -v -f --strip -f -M
 # sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 
 UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"

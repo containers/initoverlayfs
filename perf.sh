@@ -7,8 +7,6 @@ convert_file() {
 
   touch $file.bak
 
-set +x
-
   while read j; do
     first_word=$(echo "$j" | awk '{print $1}')
     rest_of_line=$(echo "$j" | sed 's/[^ ]* //')
@@ -26,7 +24,7 @@ for i in {1..64}; do
   wait
   cp f38-qemu-developer-regular.aarch64.qcow2 f38.qcow2
   preboot_time=$(date +%s.%N)
-  ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
+  taskset -c 4-7 ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
   cd -
   sleep 32
   ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > legacy$i.txt
@@ -37,7 +35,7 @@ for i in {1..64}; do
   cd ~/git/sample-images/osbuild-manifests
   preboot_time=$(date +%s.%N)
   wait
-  ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
+  taskset -c 4-7 ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
   cd -
   sleep 32
   ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > initoverlayfs$i.txt
