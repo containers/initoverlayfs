@@ -73,6 +73,7 @@ if [ "$2" = "initramfs" ]; then
   du -sh /boot/initramfs*
   sudo dd if=/dev/urandom of=/usr/bin/random-file count=1 bs="$1"
   sudo dracut --lz4 -v -f --strip -f -M
+  exit 0
 fi
 
 # sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
