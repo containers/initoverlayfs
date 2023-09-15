@@ -61,6 +61,8 @@ du -sh /boot/initramfs*
 dracut -f --lz4
 fi
 
+set -x
+
 cd ~/git/initoverlayfs
 if [ "$2" = "initramfs" ]; then
   sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs

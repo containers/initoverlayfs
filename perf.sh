@@ -49,7 +49,7 @@ for i in {1..64}; do
   ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > legacy$i.txt
   convert_file legacy$i.txt &
   git-push.sh -p2222 root@127.0.0.1
-  size="$(echo "$i * 4" | bc)M"
+  size="$(echo "$i * 8" | bc)M"
   ssh -p2222 root@127.0.0.1 "cd ~/git/initoverlayfs && ./build.sh $size initramfs"
   ssh -p2222 root@127.0.0.1 "init 0" || true # > /dev/null 2>&1
 
@@ -59,8 +59,8 @@ for i in {1..64}; do
   taskset -c 4-7 ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
   cd -
   sleep 32
-  ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > legacy-plus-data-$i.txt
-  convert_file legacy-plus-data-$i.txt &
+  ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > legacy-plus-data$i.txt
+  convert_file legacy-plus-data$i.txt &
   ssh -p2222 root@127.0.0.1 "cd ~/git/initoverlayfs && ./build.sh $size"
   ssh -p2222 root@127.0.0.1 "init 0" || true
 
