@@ -5,7 +5,7 @@ set -e
 release=$(uname -r)
 
 DIR_TO_DUMP_INITRAMFS="/run/initoverlayfs"
-UUID="1dd3a986-997c-0c48-1d1b-b0d0399f3153"
+#UUID="1dd3a986-997c-0c48-1d1b-b0d0399f3153"
 
 fs="erofs"
 
@@ -36,10 +36,10 @@ extract_initrd_into_initoverlayfs() {
 }
 
 cd 
-epoch=$(date +%s)
+#epoch=$(date +%s)
 # systemd-analyze > systemd-analyze$epoch.txt
-journalctl --output=short-monotonic > journalctl$epoch.txt
-journalctl --output=short-monotonic | grep -i "Reached target" > reached_target$epoch.txt
+#journalctl --output=short-monotonic > journalctl$epoch.txt
+#journalctl --output=short-monotonic | grep -i "Reached target" > reached_target$epoch.txt
 #sed -i "s/UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/# UUID=2aadcf0d-81dc-4b21-99ef-74b96bb357ad/g" /etc/fstab
 if false; then
 cp mount-sysroot.service /usr/lib/systemd/system/
@@ -62,15 +62,17 @@ dracut -f --lz4
 fi
 
 cd ~/git/initoverlayfs
+if [ "$2" = "initramfs" ]; then
+  sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
+  sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
 
-sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
-sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
+  sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
+  sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
+  du -sh /boot/initramfs*
+  sudo dd if=/dev/urandom of=/usr/bin/random-file count=1 bs="$1"
+  sudo dracut --lz4 -v -f --strip -f -M
+fi
 
-sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
-sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
-du -sh /boot/initramfs*
-sudo dd if=/dev/urandom of=/usr/bin/random-file count=1 bs="$1"
-sudo dracut --lz4 -v -f --strip -f -M
 # sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 
 UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
