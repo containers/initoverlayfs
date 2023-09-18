@@ -61,7 +61,7 @@ du -sh /boot/initramfs*
 dracut -f --lz4
 fi
 
-set -x
+set -ex
 
 cd ~/git/initoverlayfs
 if [ "$2" = "initramfs" ]; then
