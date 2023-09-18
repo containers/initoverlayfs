@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 failure() {
   local lineno=$1
