@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 failure() {
   local lineno=$1
@@ -104,6 +104,9 @@ sudo du -sh $initramfs
 #sudo lsinitrd
 sudo du -sh /boot/initramfs*
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
+
+set -x
+
 sudo dracut --lz4 -v -m "systemd kernel-modules udev-rules pre-initramfs" -f --strip $initramfs -M -o "nss-softokn bash systemd-initrd i18n kernel-modules-extra" # rootfs-block dracut-systemd usrmount base fs-lib shutdown"
 sudo du -sh /boot/initramfs*
 #sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
