@@ -25,13 +25,13 @@ convert_file() {
 }
 
 #pkill qemu || true
-cd ~/git/sample-images/osbuild-manifests
-cp f38-qemu-developer-regular.aarch64.qcow2 f38.qcow2
-preboot_time=$(date +%s.%N)
-taskset -c 4-7 ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
-cd -
+#cd ~/git/sample-images/osbuild-manifests
+#cp f38-qemu-developer-regular.aarch64.qcow2 f38.qcow2
+#preboot_time=$(date +%s.%N)
+#taskset -c 4-7 ./runvm --aboot --nographics f38.qcow2 > /dev/null 2>&1 &
+#cd -
 
-sleep 8
+#sleep 8
 
 ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > legacy$i.txt
 convert_file legacy$i.txt &
