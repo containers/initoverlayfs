@@ -37,6 +37,6 @@ ssh -p2222 root@127.0.0.1 "sudo journalctl --output=short-unix -b" > legacy$i.tx
 convert_file legacy$i.txt &
 
 git-push.sh -p2222 root@127.0.0.1
-ssh -p2222 root@127.0.0.1 "cd ~/git/initoverlayfs && ./build.sh"
+ssh -p2222 root@127.0.0.1 "cd ~/git/initoverlayfs && ./build.sh" > build.txt 2>&1
 ssh -p2222 root@127.0.0.1 "reboot" || true # > /dev/null 2>&1
 
