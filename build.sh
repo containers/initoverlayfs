@@ -107,7 +107,7 @@ sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 
 set -x
 
-sudo dracut --lz4 -v -m "systemd kernel-modules udev-rules pre-initramfs" -f --strip $initramfs -M -o "nss-softokn" # bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown # systemd-initrd (req by systemd)
+sudo dracut --lz4 -v -m "systemd kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn" # bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown # systemd-initrd (req by systemd)
 sudo du -sh /boot/initramfs*
 #sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
