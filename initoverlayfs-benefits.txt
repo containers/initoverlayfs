@@ -1,1 +1,3 @@
 31M initramfs -> 14M initramfs 20M reduction
+~300ms boot time reduction
+
