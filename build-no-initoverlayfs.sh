@@ -62,8 +62,8 @@ fi
 
 cd ~/git/initoverlayfs
 
-sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
-sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-initoverlayfs.c -o /usr/sbin/pre-initoverlayfs
+sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-init.c -o /usr/sbin/pre-init
+sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-init.c -o /usr/sbin/pre-init
 
 sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
 sudo dracut -v -f --strip -f -M
@@ -73,14 +73,14 @@ exit 0
 UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
 extract_initrd_into_initoverlayfs
 sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
-# sudo valgrind /usr/sbin/pre-initoverlayfs
-# sudo ln -sf pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
-# sudo ln -sf usr/bin/pre-initoverlayfs $DIR_TO_DUMP_INITRAMFS/init
+# sudo valgrind /usr/sbin/pre-init
+# sudo ln -sf pre-init $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
+# sudo ln -sf usr/bin/pre-init $DIR_TO_DUMP_INITRAMFS/init
 if [ $fs == "erofs" ]; then
   sudo mkfs.$fs /boot/initoverlayfs-$release.img /run/initoverlayfs/
 fi
 #sudo losetup -fP /boot/initoverlayfs-$release.img
-# ln -s init /usr/sbin/pre-initoverlayfs
+# ln -s init /usr/sbin/pre-init
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
 sudo du -sh $initramfs
 #sudo dracut -v -f --strip $initramfs -M
@@ -95,7 +95,7 @@ bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
 #sudo sed -i '/boot.*ext4/d' /etc/fstab
 sudo systemctl daemon-reload
-sudo sed -i "s#options #options initoverlayfs=$boot_partition:/boot/initoverlayfs-$release.img initoverlayfstype=ext4:erofs rdinit=/usr/sbin/pre-initoverlayfs #g" /boot/loader/entries/$bls_file
+sudo sed -i "s#options #options initoverlayfs=$boot_partition:/boot/initoverlayfs-$release.img initoverlayfstype=ext4:erofs rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/bin/bash #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
