@@ -117,7 +117,8 @@ set -x
 
 sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-init.c -o /usr/sbin/pre-init
 sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-init.c -o /usr/sbin/pre-init
-sudo dracut $decompressor_dracut -v -m "kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
+#sudo dracut $decompressor_dracut -v -m "kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
+sudo dracut $decompressor_dracut -v -f --strip -M
 sudo du -sh /boot/initramfs*
 sudo lsinitrd | grep "pre-init"
 sudo du -sh $initramfs
