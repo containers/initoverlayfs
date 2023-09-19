@@ -83,7 +83,7 @@ if [ "$2" = "initramfs" ]; then
   sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-init.c -o /usr/sbin/pre-init
   sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-init.c -o /usr/sbin/pre-init
 
-  sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
+  sudo cp -r lib/dracut/modules.d/81pre-initoverlayfs /usr/lib/dracut/modules.d/
   sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
   du -sh /boot/initramfs*
   sudo dd if=/dev/urandom of=/usr/bin/random-file count=1 bs="$1"
@@ -109,7 +109,7 @@ sudo du -sh $initramfs
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
 sudo du -sh /boot/initramfs*
-sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
+sudo cp -r lib/dracut/modules.d/81pre-initoverlayfs /usr/lib/dracut/modules.d/
 
 set -x
 

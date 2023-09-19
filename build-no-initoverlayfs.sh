@@ -65,7 +65,7 @@ cd ~/git/initoverlayfs
 sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-init.c -o /usr/sbin/pre-init
 sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-init.c -o /usr/sbin/pre-init
 
-sudo cp -r lib/dracut/modules.d/81pre-initramfs /usr/lib/dracut/modules.d/
+sudo cp -r lib/dracut/modules.d/81pre-initoverlayfs /usr/lib/dracut/modules.d/
 sudo dracut -v -f --strip -f -M
 exit 0
 # sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
