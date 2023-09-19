@@ -21,9 +21,15 @@ fs="erofs"
 extract_initrd_into_initoverlayfs() {
   sudo mkdir -p "$DIR_TO_DUMP_INITRAMFS"
 
+  file_type=$(file /boot/initramfs-$release.img)
+  decompressor="lz4cat"
+  if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
+    decompressor="zcat"
+  fi
+
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
-    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | lz4cat | sudo cpio -ivd
+    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | $decompressor | sudo cpio -ivd
   else
     fs="ext4"
     dd if=/dev/zero of=/boot/initoverlayfs-$release.img bs=64M count=1
