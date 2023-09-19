@@ -494,6 +494,7 @@ int main(void) {
           "%d (%s)\n",
           errno, strerror(errno));
 
+    exec_path("bash");
     if (switchroot("/initoverlayfs"))
       print("switchroot(\"initoverlayfs\") %d (%s)\n", errno, strerror(errno));
 
