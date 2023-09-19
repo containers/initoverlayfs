@@ -23,7 +23,9 @@ extract_initrd_into_initoverlayfs() {
 
   file_type=$(file /boot/initramfs-$release.img)
   decompressor="lz4cat"
+  decompressor_dracut="--lz4"
   if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
+    decompressor_dracut=""
     decompressor="zcat"
   fi
 
@@ -115,7 +117,7 @@ set -x
 
 sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-init.c -o /usr/sbin/pre-init
 sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-init.c -o /usr/sbin/pre-init
-sudo dracut --lz4 -v -m "kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
+sudo dracut $decompressor_dracut -v -m "kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
 sudo du -sh /boot/initramfs*
 #sudo lsinitrd | grep "init\|boot\|overlay\|erofs"
 sudo du -sh $initramfs
