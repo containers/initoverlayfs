@@ -460,8 +460,10 @@ int main(void) {
     fs = find_conf_key(conf, "fs");
     printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
            fs ? fs : "(nil)");
-    if (!fs)
+    if (!fs) {
+      print("return 1;\n");
       return 1;  // fatal error, something is drastically wrong
+    }
 
     printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
            fs ? fs : "(nil)");
