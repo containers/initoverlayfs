@@ -460,6 +460,7 @@ int main(void) {
 
   autofree char* fs = NULL;
   autofree char* fstype = NULL;
+  autofree char* fs_abs = NULL;
   if (conf) {
     fs = find_conf_key(conf, "fs");
 
@@ -478,14 +479,14 @@ int main(void) {
            fs ? fs : "(nil)");
 #endif
 
-    autofree char* fs_abs = malloc(sizeof("/boot") + strlen(fs));
+    fs_abs = malloc(sizeof("/boot") + strlen(fs));
     if (!fs_abs)
       return 2;  // fatal error, something is drastically wrong if realloc fails
 
-    strcpy(fs, "/boot");
-    strcpy(fs + sizeof("/boot") - 1, fs);
+    strcpy(fs_abs, "/boot");
+    strcpy(fs_abs + sizeof("/boot") - 1, fs);
 
-    printd("strcpy(\"%s\", \"/boot\")\n", fs ? fs : "(nil)");
+    printd("strcpy(\"%s\", \"/boot\")\n", fs_abs ? fs_abs : "(nil)");
 
     fstype = find_conf_key(conf, "fstype");
     printd("find_conf_key(\"%s\", \"fstype\") = \"%s\"\n",
@@ -507,8 +508,8 @@ int main(void) {
   fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
   char dev_loop[16];
-  if (fs && losetup(dev_loop, fs))
-    print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs, errno,
+  if (fs_abs && losetup(dev_loop, fs_abs))
+    print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs_abs, errno,
           strerror(errno));
   // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
   if (mount("/dev/loop0", "/initrofs", fstype, MS_RDONLY, NULL))
