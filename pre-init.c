@@ -454,7 +454,7 @@ int main(void) {
     strtok(initoverlayfstype, ":");
     const char* filefstype = strtok(NULL, ":");
     const char* partfstype = initoverlayfstype;
-    fork_exec_path("udevadm", "settle");
+    fork_exec_path("udevadm", "wait", part);
     if (mount(part, "/boot", partfstype, 0, NULL))
       print(
           "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
