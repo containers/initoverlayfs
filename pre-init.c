@@ -467,8 +467,8 @@ int main(void) {
     if (!tmp_fs)
       return 2;  // fatal error, something is drastically wrong if realloc fails
 
-    printd("realloc(\"%s\", sizeof(\"/boot\") + strlen(\"%s\")) = \"%s\"\n",
-           fs ? fs : "(nil)", fs ? fs : "(nil)", tmp_fs ? tmp_fs : "(nil)");
+    printd("realloc(%p, sizeof(\"/boot\") + strlen(%p)) = \"%s\"\n", (void*)fs,
+           (void*)fs, tmp_fs ? tmp_fs : "(nil)");
     fs = tmp_fs;
     strcpy(fs + sizeof("/boot"), fs);
     strcpy(fs, "/boot");
