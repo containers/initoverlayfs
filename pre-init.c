@@ -451,15 +451,23 @@ int main(void) {
 
   autofree char* initoverlayfstype =
       find_conf_key(cmdline, "initoverlayfstype");
+
+#if 0
   printd("find_conf_key(\"%s\", \"initoverlayfstype\") = \"%s\"\n",
          cmdline ? cmdline : "(nil)",
          initoverlayfstype ? initoverlayfstype : "(nil)");
+#endif
+
   autofree char* fs = NULL;
   autofree char* fstype = NULL;
   if (conf) {
     fs = find_conf_key(conf, "fs");
+
+#if 0
     printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
            fs ? fs : "(nil)");
+#endif
+
     if (!fs) {
       print("return 1;\n");
       return 1;  // fatal error, something is drastically wrong
