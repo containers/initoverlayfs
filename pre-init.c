@@ -486,8 +486,12 @@ int main(void) {
            tmp_fs ? tmp_fs : "(nil)");
     fs = tmp_fs;
     strcpy(fs + sizeof("/boot"), fs);
-    strcpy(fs, "/boot");
-    fs[sizeof("/boot")] = '/';
+    fs[0] = '/';
+    fs[1] = 'b';
+    fs[2] = 'o';
+    fs[3] = 'o';
+    fs[4] = 't';
+
     printd("strcpy(\"%s\", \"/boot\")\n", fs ? fs : "(nil)");
 
     fstype = find_conf_key(conf, "fstype");
