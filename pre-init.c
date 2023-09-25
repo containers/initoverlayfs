@@ -127,9 +127,9 @@ out:
   return cmdline;
 }
 
-static inline char* find_conf_key(const char* cmdline, const char* key) {
+static inline char* find_conf_key(const char* line, const char* key) {
   const size_t key_len = strlen(key);
-  for (const char* iter = cmdline; iter;) {
+  for (const char* iter = line; iter;) {
     const char* next = strchr(iter, ' ');
     if (strncmp(iter, key, key_len) == 0 && iter[key_len] == '=') {
       const char* start = iter + key_len + 1;
@@ -448,23 +448,33 @@ int main(void) {
   autofree char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
   printd("find_conf_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
          cmdline ? cmdline : "(nil)", initoverlayfs ? initoverlayfs : "(nil)");
-  autofree char* initoverlayfs_absolute =
-      malloc(sizeof("/boot") + strlen(initoverlayfs));
-  strcpy(initoverlayfs_absolute, "/boot");
-  strcpy(initoverlayfs_absolute + sizeof("/boot"), initoverlayfs);
 
   autofree char* initoverlayfstype =
       find_conf_key(cmdline, "initoverlayfstype");
   printd("find_conf_key(\"%s\", \"initoverlayfstype\") = \"%s\"\n",
          cmdline ? cmdline : "(nil)",
          initoverlayfstype ? initoverlayfstype : "(nil)");
-  autofree char* fs = find_conf_key(conf, "fs");
-  printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
-         fs ? fs : "(nil)");
+  autofree char* fs = NULL;
+  autofree char* fstype = NULL;
+  if (conf) {
+    fs = find_conf_key(conf, "fs");
+    printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
+           fs ? fs : "(nil)");
+    if (!fs)
+      return 1;  // fatal error, something is drastically wrong
 
-  autofree char* fstype = find_conf_key(conf, "fstype");
-  printd("find_conf_key(\"%s\", \"fstype\") = \"%s\"\n", conf ? conf : "(nil)",
-         fstype ? fstype : "(nil)");
+    char* tmp_fs = realloc(fs, sizeof("/boot") + strlen(fs));
+    if (!tmp_fs)
+      return 2;  // fatal error, something is drastically wrong if realloc fails
+
+    fs = tmp_fs;
+    strcpy(fs + sizeof("/boot"), fs);
+    strcpy(fs, "/boot");
+
+    fstype = find_conf_key(conf, "fstype");
+    printd("find_conf_key(\"%s\", \"fstype\") = \"%s\"\n",
+           conf ? conf : "(nil)", fstype ? fstype : "(nil)");
+  }
 
   fork_exec_path("udevadm", "wait", initoverlayfs);
   if (mount(initoverlayfs, "/boot", initoverlayfstype, 0, NULL))
@@ -481,7 +491,7 @@ int main(void) {
   fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
   char dev_loop[16];
-  if (losetup(dev_loop, fs))
+  if (fs && losetup(dev_loop, fs))
     print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs, errno,
           strerror(errno));
   // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
