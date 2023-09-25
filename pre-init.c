@@ -478,19 +478,12 @@ int main(void) {
            fs ? fs : "(nil)");
 #endif
 
-    char* tmp_fs = realloc(fs, sizeof("/boot") + strlen(fs));
-    if (!tmp_fs)
+    autofree char* fs_abs = malloc(sizeof("/boot") + strlen(fs));
+    if (!fs_abs)
       return 2;  // fatal error, something is drastically wrong if realloc fails
 
-    printd("realloc(fs, sizeof(\"/boot\") + strlen(fs)) = \"%s\"\n",
-           tmp_fs ? tmp_fs : "(nil)");
-    fs = tmp_fs;
+    strcpy(fs, "/boot");
     strcpy(fs + sizeof("/boot") - 1, fs);
-    fs[0] = '/';
-    fs[1] = 'b';
-    fs[2] = 'o';
-    fs[3] = 'o';
-    fs[4] = 't';
 
     printd("strcpy(\"%s\", \"/boot\")\n", fs ? fs : "(nil)");
 
