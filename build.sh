@@ -27,6 +27,9 @@ extract_initrd_into_initoverlayfs() {
   if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
     decompressor_dracut=""
     decompressor="zcat"
+  elif [[ "$file_type" == *"regular file, no read permission"* ]]; then
+    decompressor_dracut=""
+    decompressor="zcat"
   fi
 
   if command -v mkfs.erofs; then
