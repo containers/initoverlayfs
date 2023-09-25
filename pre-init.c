@@ -485,7 +485,7 @@ int main(void) {
     printd("realloc(fs, sizeof(\"/boot\") + strlen(fs)) = \"%s\"\n",
            tmp_fs ? tmp_fs : "(nil)");
     fs = tmp_fs;
-    strcpy(fs + sizeof("/boot"), fs);
+    strcpy(fs + sizeof("/boot") - 1, fs);
     fs[0] = '/';
     fs[1] = 'b';
     fs[2] = 'o';
