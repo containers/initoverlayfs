@@ -436,7 +436,6 @@ static inline void start_udev(void) {
 }
 
 int main(void) {
-  printd("Start pre-init\n");
   if (mount_proc_sys_dev()) {
     return errno;
   }
@@ -460,32 +459,16 @@ int main(void) {
   autofree char* initoverlayfstype =
       find_conf_key(cmdline, "initoverlayfstype");
 
-#if 0
-  printd("find_conf_key(\"%s\", \"initoverlayfstype\") = \"%s\"\n",
-         cmdline ? cmdline : "(nil)",
-         initoverlayfstype ? initoverlayfstype : "(nil)");
-#endif
-
   autofree char* fs = NULL;
   autofree char* fstype = NULL;
   autofree char* fs_abs = NULL;
   if (conf) {
     fs = find_conf_key(conf, "fs");
 
-#if 0
-    printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
-           fs ? fs : "(nil)");
-#endif
-
     if (!fs) {
       print("return 1;\n");
       return 1;  // fatal error, something is drastically wrong
     }
-
-#if 0
-    printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
-           fs ? fs : "(nil)");
-#endif
 
     fs_abs = malloc(sizeof("/boot") + strlen(fs));
     if (!fs_abs)
@@ -508,18 +491,13 @@ int main(void) {
         "%d (%s)\n",
         initoverlayfs, initoverlayfstype, errno, strerror(errno));
 
-  printd(
-      "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) = 0 "
-      "%d (%s)\n",
-      initoverlayfs, initoverlayfstype, errno, strerror(errno));
-
   fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
   char dev_loop[16];
   if (fs_abs && losetup(dev_loop, fs_abs))
     print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs_abs, errno,
           strerror(errno));
-  // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
+
   if (mount("/dev/loop0", "/initrofs", fstype, MS_RDONLY, NULL))
     print(
         "mount(\"/dev/loop0\", \"/initrofs\", \"%s\", MS_RDONLY, NULL) "
@@ -544,7 +522,6 @@ int main(void) {
   if (switchroot("/initoverlayfs"))
     print("switchroot(\"initoverlayfs\") %d (%s)\n", errno, strerror(errno));
 
-  //    exec_path("bash");
   exec_absolute_path("/sbin/init");
   exec_absolute_path("/etc/init");
   exec_absolute_path("/bin/init");
