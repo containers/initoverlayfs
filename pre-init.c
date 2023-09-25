@@ -395,7 +395,7 @@ fail:
   return -1;
 }
 
-static inline int mount_proc_sys_dev() {
+static inline int mount_proc_sys_dev(void) {
   if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
     print(
         "mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID | MS_NOEXEC | "
@@ -427,7 +427,7 @@ static inline int mount_proc_sys_dev() {
   return 0;
 }
 
-static inline void start_udev() {
+static inline void start_udev(void) {
   fork_exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
   fork_exec_path("udevadm", "trigger", "--type=devices", "--action=add",
                  "--subsystem-match=module", "--subsystem-match=block",
