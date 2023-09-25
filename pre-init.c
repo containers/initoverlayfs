@@ -473,8 +473,10 @@ int main(void) {
       return 1;  // fatal error, something is drastically wrong
     }
 
+#if 0
     printd("find_conf_key(\"%s\", \"fs\") = \"%s\"\n", conf ? conf : "(nil)",
            fs ? fs : "(nil)");
+#endif
 
     char* tmp_fs = realloc(fs, sizeof("/boot") + strlen(fs));
     if (!tmp_fs)
