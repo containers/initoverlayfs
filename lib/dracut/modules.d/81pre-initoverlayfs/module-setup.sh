@@ -5,7 +5,8 @@ installkernel() {
 }
 
 install() {
-    inst_multiple -o /usr/sbin/pre-init "$systemdutildir"/systemd-udevd udevadm /usr/sbin/modprobe
+    inst_multiple -o /usr/sbin/pre-init "$systemdutildir"/systemd-udevd \
+      udevadm /usr/sbin/modprobe /etc/initoverlayfs.conf
     inst_dir /boot /initrofs /overlay /overlay/upper /overlay/work /initoverlayfs
 }
 

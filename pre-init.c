@@ -99,8 +99,8 @@ static inline void cleanup_close(const int* fd) {
     close(*fd);
 }
 
-static inline char* read_proc_cmdline(void) {
-  FILE* f = fopen("/proc/cmdline", "r");
+static inline char* read_conf(const char* file) {
+  FILE* f = fopen(file, "r");
   char* cmdline = NULL;
   size_t len;
 
@@ -149,6 +149,7 @@ static inline char* find_proc_cmdline_key(const char* cmdline,
   return NULL;
 }
 
+#if 0
 static inline bool string_contains(const char* cmdline, const char c) {
   for (; cmdline; ++cmdline)
     if (*cmdline == c)
@@ -156,6 +157,7 @@ static inline bool string_contains(const char* cmdline, const char c) {
 
   return false;
 }
+#endif
 
 static FILE* kmsg_f = 0;
 
@@ -434,8 +436,13 @@ int main(void) {
                  "--subsystem-match=nvme");
   printd("Finish udevadm\n");
 
-  autofree char* cmdline = read_proc_cmdline();
+  autofree char* cmdline = read_conf("/proc/cmdline");
   printd("read_proc_cmdline() = \"%s\"\n", cmdline ? cmdline : "(nil)");
+
+  // Other than initoverlayfs and initoverlayfs type, put all other
+  // configuration in here if possible to avoid polluting kernel cmdline.
+  autofree char* conf = read_conf("/etc/initoverlayfs.conf");
+  printd("read_etc_conf() = \"%s\"\n", conf ? conf : "(nil)");
 
   autofree char* initoverlayfs =
       find_proc_cmdline_key(cmdline, "initoverlayfs");
@@ -447,37 +454,33 @@ int main(void) {
   printd("find_proc_cmdline_key(\"%s\", \"initoverlayfstype\") = \"%s\"\n",
          cmdline ? cmdline : "(nil)", initoverlayfstype ? initoverlayfstype : "(nil)");
 
-  if (string_contains(initoverlayfs, ':')) {
-    strtok(initoverlayfs, ":");
-    const char* file = strtok(NULL, ":");
-    const char* part = initoverlayfs;
-    strtok(initoverlayfstype, ":");
-    const char* filefstype = strtok(NULL, ":");
-    const char* partfstype = initoverlayfstype;
-    fork_exec_path("udevadm", "wait", part);
-    if (mount(part, "/boot", partfstype, 0, NULL))
+    autofree char* fs = find_proc_cmdline_key(conf, "fs");
+    autofree char* fstype = find_proc_cmdline_key(conf, "fstype");
+
+    fork_exec_path("udevadm", "wait", initoverlayfs);
+    if (mount(initoverlayfs, "/boot", initoverlayfstype, 0, NULL))
       print(
           "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
           "%d (%s)\n",
-          part, partfstype, errno, strerror(errno));
+          initoverlayfs, initoverlayfstype, errno, strerror(errno));
 
     printd(
         "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) = 0 "
         "%d (%s)\n",
-        part, partfstype, errno, strerror(errno));
+        initoverlayfs, initoverlayfstype, errno, strerror(errno));
 
     fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
     char dev_loop[16];
-    if (losetup(dev_loop, file))
-      print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, file, errno,
+    if (losetup(dev_loop, fs))
+      print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs, errno,
             strerror(errno));
     // fork_exec_absolute("/usr/sbin/losetup", "/dev/loop0", file);
-    if (mount("/dev/loop0", "/initrofs", filefstype, MS_RDONLY, NULL))
+    if (mount("/dev/loop0", "/initrofs", fstype, MS_RDONLY, NULL))
       print(
           "mount(\"/dev/loop0\", \"/initrofs\", \"%s\", MS_RDONLY, NULL) "
           "%d (%s)\n",
-          filefstype, errno, strerror(errno));
+          fstype, errno, strerror(errno));
 
     if (mount("overlay", "/initoverlayfs", "overlay", 0,
               "redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/"
@@ -502,9 +505,6 @@ int main(void) {
     exec_absolute_path("/etc/init");
     exec_absolute_path("/bin/init");
     exec_absolute_path("/bin/sh");
-
-    return errno;
-  }
 
   fclose(kmsg_f);
 

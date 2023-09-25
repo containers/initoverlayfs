@@ -121,6 +121,7 @@ set -x
 sudo clang -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror pre-init.c -o /usr/sbin/pre-init
 sudo gcc -DUNLOCK_OVERLAYDIR=\"$UNLOCK_OVERLAYDIR\" -O3 -pedantic -Wall -Wextra -Werror -fanalyzer pre-init.c -o /usr/sbin/pre-init
 #sudo dracut $decompressor_dracut -v -m "kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
+echo "fs=/initoverlayfs-$release.img fstype=erofs" > /etc/initoverlayfs.conf
 sudo dracut $decompressor_dracut -v -f --strip -M
 sudo du -sh /boot/initramfs*
 sudo lsinitrd | grep "pre-init"
@@ -132,7 +133,7 @@ bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
 #sudo sed -i '/boot.*ext4/d' /etc/fstab
 sudo systemctl daemon-reload
-sudo sed -i "s#options #options initoverlayfs=$boot_partition:/boot/initoverlayfs-$release.img initoverlayfstype=ext4:erofs rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
+sudo sed -i "s#options #options initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/bin/bash #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
