@@ -395,8 +395,7 @@ fail:
   return -1;
 }
 
-int main(void) {
-  printd("Start pre-init\n");
+static inline int mount_proc_sys_dev() {
   if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
     print(
         "mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID | MS_NOEXEC | "
@@ -425,16 +424,25 @@ int main(void) {
     return errno;
   }
 
-  log_open_kmsg();
-  printd("log_open_kmsg()\n");
+  return 0;
+}
+
+static inline void start_udev() {
   fork_exec_absolute("/lib/systemd/systemd-udevd", "--daemon");
-  printd("Finish systemd-udevd\n");
   fork_exec_path("udevadm", "trigger", "--type=devices", "--action=add",
                  "--subsystem-match=module", "--subsystem-match=block",
                  "--subsystem-match=virtio", "--subsystem-match=pci",
                  "--subsystem-match=nvme");
-  printd("Finish udevadm\n");
+}
 
+int main(void) {
+  printd("Start pre-init\n");
+  if (mount_proc_sys_dev()) {
+    return errno;
+  }
+
+  log_open_kmsg();
+  start_udev();
   autofree char* cmdline = read_conf("/proc/cmdline");
   printd("read_conf(\"%s\") = \"%s\"\n", "/proc/cmdline",
          cmdline ? cmdline : "(nil)");
