@@ -470,6 +470,7 @@ int main(void) {
     fs = tmp_fs;
     strcpy(fs + sizeof("/boot"), fs);
     strcpy(fs, "/boot");
+    printd("strcpy(\"%s\", \"/boot\")\n", fs ? fs : "(nil)");
 
     fstype = find_conf_key(conf, "fstype");
     printd("find_conf_key(\"%s\", \"fstype\") = \"%s\"\n",
@@ -510,11 +511,11 @@ int main(void) {
         "upper,workdir=/overlay/work\") %d (%s)\n",
         errno, strerror(errno));
 
-  if (mount("/boot", "/initoverlayfs/boot", "ext4", MS_MOVE, NULL))
+  if (mount("/boot", "/initoverlayfs/boot", initoverlayfstype, MS_MOVE, NULL))
     print(
-        "mount(\"/boot\", \"/initoverlayfs/boot\", \"ext4\", MS_MOVE, NULL) "
+        "mount(\"/boot\", \"/initoverlayfs/boot\", \"%s\", MS_MOVE, NULL) "
         "%d (%s)\n",
-        errno, strerror(errno));
+        initoverlayfstype, errno, strerror(errno));
 
   if (switchroot("/initoverlayfs"))
     print("switchroot(\"initoverlayfs\") %d (%s)\n", errno, strerror(errno));
