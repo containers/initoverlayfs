@@ -456,14 +456,13 @@ int main(void) {
 
   autofree char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
   const char* token = strtok(initoverlayfs, "=");
+  char* initoverlayfs_tmp = 0;
   if (!strcmp(token, "LABEL")) {
-    char* initoverlayfs_tmp = 0;
     token = strtok(NULL, "=");
     asprintf(&initoverlayfs_tmp, "/dev/disk/by-label/%s", token);
     free(initoverlayfs);
     initoverlayfs = initoverlayfs_tmp;
   } else if (!strcmp(token, "UUID")) {
-    char* initoverlayfs_tmp = 0;
     token = strtok(NULL, "=");
     asprintf(&initoverlayfs_tmp, "/dev/disk/by-uuid/%s", token);
     free(initoverlayfs);
@@ -510,7 +509,7 @@ int main(void) {
 
   fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
-  char dev_loop[16];
+  char dev_loop[32];
   if (fs_abs && losetup(dev_loop, fs_abs))
     print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs_abs, errno,
           strerror(errno));
