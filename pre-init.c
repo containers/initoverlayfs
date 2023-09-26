@@ -24,6 +24,7 @@
 #define autofree __attribute__((cleanup(cleanup_free)))
 #define autoclose __attribute__((cleanup(cleanup_close)))
 #define autofclose __attribute__((cleanup(cleanup_fclose)))
+#define autova_end __attribute__((cleanup(cleanup_va_end)))
 
 #ifdef __cplusplus
 #define typeof decltype
@@ -88,31 +89,6 @@
 
 static FILE* kmsg_f = 0;
 
-static inline void print(const char* f, ...) {
-  va_list args;
-  va_start(args, f);
-  if (kmsg_f) {
-    vfprintf(kmsg_f, f, args);
-    va_end(args);
-    return;
-  }
-
-  vprintf(f, args);
-  va_end(args);
-}
-
-static inline void printd(const char* f, ...) {
-  va_list args;
-  va_start(args, f);
-  print(f, args);
-  va_end(args);
-}
-
-static inline void exec_absolute_path(const char* exe) {
-  printd("execl(\"%s\")\n", exe);
-  execl(exe, exe, (char*)NULL);
-}
-
 static inline void cleanup_free(void* p) {
   free(*(void**)p);
 }
@@ -124,6 +100,32 @@ static inline void cleanup_close(const int* fd) {
 
 static inline void cleanup_fclose(FILE** stream) {
   fclose(*stream);
+}
+
+static inline void cleanup_va_end(va_list* args) {
+  va_end(*args);
+}
+
+static inline void print(const char* f, ...) {
+  autova_end va_list args;
+  va_start(args, f);
+  if (kmsg_f) {
+    vfprintf(kmsg_f, f, args);
+    return;
+  }
+
+  vprintf(f, args);
+}
+
+static inline void printd(const char* f, ...) {
+  autova_end va_list args;
+  va_start(args, f);
+  print(f, args);
+}
+
+static inline void exec_absolute_path(const char* exe) {
+  printd("execl(\"%s\")\n", exe);
+  execl(exe, exe, (char*)NULL);
 }
 
 static inline char* read_conf(const char* file) {
