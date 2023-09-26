@@ -456,13 +456,12 @@ int main(void) {
 
   autofree char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
   const char* token = strtok(initoverlayfs, "=");
-  autofree char* device_to_wait_for = 0;
   if (!strcmp(token, "UUID")) {
+    char* initoverlayfs_tmp = 0;
     token = strtok(NULL, "=");
-    asprintf(&device_to_wait_for, "/dev/disk/by-uuid/%s", token);
-  } else {
-    device_to_wait_for = initoverlayfs;
-    initoverlayfs = 0;
+    asprintf(&initoverlayfs_tmp, "/dev/disk/by-uuid/%s", token);
+    free(initoverlayfs);
+    initoverlayfs = initoverlayfs_tmp;
   }
 
   printd("find_conf_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
