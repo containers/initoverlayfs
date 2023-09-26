@@ -128,12 +128,13 @@ sudo lsinitrd | grep "pre-init"
 sudo du -sh $initramfs
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
-boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
+#boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
 bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
+uuid=$(grep "boot.*ext4" /etc/fstab | awk '{print $1}' | sed s/UUID=//g)
 #sudo sed -i '/boot.*ext4/d' /etc/fstab
 sudo systemctl daemon-reload
-sudo sed -i "s#options #options initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
+sudo sed -i "s#options #options initoverlayfs=UUID=$uuid initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition:initoverlayfs-$release.img rdinit=/usr/bin/bash #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file

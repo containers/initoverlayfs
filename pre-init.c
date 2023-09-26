@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <dirent.h>
 #include <err.h>
@@ -453,6 +455,16 @@ int main(void) {
          conf ? conf : "(nil)");
 
   autofree char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
+  const char* token = strtok(initoverlayfs, "=");
+  autofree char* device_to_wait_for = 0;
+  if (!strcmp(token, "UUID")) {
+    token = strtok(NULL, "=");
+    asprintf(&device_to_wait_for, "/dev/disk/by-uuid/%s", token);
+  } else {
+    device_to_wait_for = initoverlayfs;
+    initoverlayfs = 0;
+  }
+
   printd("find_conf_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
          cmdline ? cmdline : "(nil)", initoverlayfs ? initoverlayfs : "(nil)");
 
