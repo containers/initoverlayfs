@@ -456,7 +456,13 @@ int main(void) {
 
   autofree char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
   const char* token = strtok(initoverlayfs, "=");
-  if (!strcmp(token, "UUID")) {
+  if (!strcmp(token, "LABEL")) {
+    char* initoverlayfs_tmp = 0;
+    token = strtok(NULL, "=");
+    asprintf(&initoverlayfs_tmp, "/dev/disk/by-label/%s", token);
+    free(initoverlayfs);
+    initoverlayfs = initoverlayfs_tmp;
+  } else if (!strcmp(token, "UUID")) {
     char* initoverlayfs_tmp = 0;
     token = strtok(NULL, "=");
     asprintf(&initoverlayfs_tmp, "/dev/disk/by-uuid/%s", token);
