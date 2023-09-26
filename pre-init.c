@@ -111,11 +111,15 @@ static inline void print(const char* f, ...) {
   vprintf(f, args);
 }
 
+#if 0
 static inline void printd(const char* f, ...) {
   autova_end va_list args;
   va_start(args, f);
   print(f, args);
 }
+#else
+#define printd(...)
+#endif
 
 static inline void exec_absolute_path(const char* exe) {
   printd("execl(\"%s\")\n", exe);
