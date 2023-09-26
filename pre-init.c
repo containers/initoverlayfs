@@ -21,6 +21,13 @@
 #define autofree __attribute__((cleanup(cleanup_free)))
 #define autoclose __attribute__((cleanup(cleanup_close)))
 
+#define SWAP(a, b)      \
+  do {                  \
+    typeof(a) temp = a; \
+    a = b;              \
+    b = temp;           \
+  } while (0)
+
 #define print(...)                  \
   do {                              \
     if (kmsg_f) {                   \
@@ -173,7 +180,7 @@ static inline int log_open_kmsg(void) {
   return 0;
 }
 
-static inline int losetup(char* loopdev, const char* file) {
+static inline int losetup(char** loopdev, const char* file) {
   autoclose const int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
   if (loopctlfd < 0) {
     print("open(\"/dev/loop-control\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n",
@@ -212,10 +219,10 @@ static inline int losetup(char* loopdev, const char* file) {
                .lo_encrypt_key = "",
                .lo_init = {0, 0}}};
   strncpy((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
-  sprintf(loopdev, "/dev/loop%ld", devnr);
-  autoclose const int loopfd = open(loopdev, O_RDWR | O_CLOEXEC);
+  asprintf(loopdev, "/dev/loop%ld", devnr);
+  autoclose const int loopfd = open(*loopdev, O_RDWR | O_CLOEXEC);
   if (loopfd < 0) {
-    print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", loopdev, loopfd,
+    print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", *loopdev, loopfd,
           errno, strerror(errno));
     return errno;
   }
@@ -321,9 +328,9 @@ static inline int switchroot(const char* newroot) {
   }
 
   for (i = 0; umounts[i] != NULL; i++) {
-    char newmount[PATH_MAX];
+    autofree char* newmount;
 
-    snprintf(newmount, sizeof(newmount), "%s%s", newroot, umounts[i]);
+    asprintf(&newmount, "%s%s", newroot, umounts[i]);
 
     if ((stat(umounts[i], &sb) == 0) && sb.st_dev == oldroot_stat.st_dev) {
       /* mount point to move seems to be a normal directory or stat failed */
@@ -456,17 +463,15 @@ int main(void) {
 
   autofree char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
   const char* token = strtok(initoverlayfs, "=");
-  char* initoverlayfs_tmp = 0;
+  autofree char* initoverlayfs_tmp = 0;
   if (!strcmp(token, "LABEL")) {
     token = strtok(NULL, "=");
     asprintf(&initoverlayfs_tmp, "/dev/disk/by-label/%s", token);
-    free(initoverlayfs);
-    initoverlayfs = initoverlayfs_tmp;
+    SWAP(initoverlayfs, initoverlayfs_tmp);
   } else if (!strcmp(token, "UUID")) {
     token = strtok(NULL, "=");
     asprintf(&initoverlayfs_tmp, "/dev/disk/by-uuid/%s", token);
-    free(initoverlayfs);
-    initoverlayfs = initoverlayfs_tmp;
+    SWAP(initoverlayfs, initoverlayfs_tmp);
   }
 
   printd("find_conf_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
@@ -509,16 +514,16 @@ int main(void) {
 
   fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
-  char dev_loop[32];
-  if (fs_abs && losetup(dev_loop, fs_abs))
+  autofree char* dev_loop = 0;
+  if (fs_abs && losetup(&dev_loop, fs_abs))
     print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs_abs, errno,
           strerror(errno));
 
-  if (mount("/dev/loop0", "/initrofs", fstype, MS_RDONLY, NULL))
+  if (mount(dev_loop, "/initrofs", fstype, MS_RDONLY, NULL))
     print(
-        "mount(\"/dev/loop0\", \"/initrofs\", \"%s\", MS_RDONLY, NULL) "
+        "mount(\"%s\", \"/initrofs\", \"%s\", MS_RDONLY, NULL) "
         "%d (%s)\n",
-        fstype, errno, strerror(errno));
+        dev_loop, fstype, errno, strerror(errno));
 
   if (mount("overlay", "/initoverlayfs", "overlay", 0,
             "redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/"
