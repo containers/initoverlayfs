@@ -52,20 +52,6 @@
     execl(exe, exe, __VA_ARGS__, (char*)NULL); \
   } while (0)
 
-#define exec_absolute_no_wait(exe)           \
-  do {                                       \
-    printd("execl(\"%s\")\n", exe);          \
-    const pid_t pid = fork();                \
-    if (pid == -1) {                         \
-      print("fail exec_absolute_no_wait\n"); \
-      break;                                 \
-    } else if (pid > 0) {                    \
-      break;                                 \
-    }                                        \
-                                             \
-    execl(exe, exe, (char*)NULL);            \
-  } while (0)
-
 #define fork_exec_path(exe, ...)                \
   do {                                          \
     printd("execlp(\"%s\")\n", exe);            \
