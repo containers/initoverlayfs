@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <assert.h>
 #include <dirent.h>
@@ -20,6 +22,11 @@
 
 #define autofree __attribute__((cleanup(cleanup_free)))
 #define autoclose __attribute__((cleanup(cleanup_close)))
+#define autofclose __attribute__((cleanup(cleanup_fclose)))
+
+#ifdef __cplusplus
+#define typeof decltype
+#endif
 
 #define SWAP(a, b)      \
   do {                  \
@@ -108,19 +115,24 @@ static inline void cleanup_close(const int* fd) {
     close(*fd);
 }
 
+static inline void cleanup_fclose(FILE** stream) {
+  fclose(*stream);
+}
+
 static inline char* read_conf(const char* file) {
-  FILE* f = fopen(file, "r");
+  autofclose FILE* f = fopen(file, "r");
   char* cmdline = NULL;
   size_t len;
 
   if (!f)
-    goto out;
+    return NULL;
 
   /* Note that /proc/cmdline will not end in a newline, so getline
    * will fail unelss we provide a length.
    */
   if (getline(&cmdline, &len, f) < 0)
-    goto out;
+    return NULL;
+
   /* ... but the length will be the size of the malloc buffer, not
    * strlen().  Fix that.
    */
@@ -128,10 +140,6 @@ static inline char* read_conf(const char* file) {
 
   if (cmdline[len - 1] == '\n')
     cmdline[len - 1] = '\0';
-
-out:
-  if (f)
-    fclose(f);
 
   return cmdline;
 }
@@ -203,7 +211,7 @@ static inline int losetup(char** loopdev, const char* file) {
   }
 
   const struct loop_config loopconfig = {
-      .fd = filefd,
+      .fd = (unsigned int)filefd,
       .block_size = 0,
       .info = {.lo_device = 0,
                .lo_inode = 0,
@@ -217,7 +225,8 @@ static inline int losetup(char** loopdev, const char* file) {
                .lo_file_name = "",
                .lo_crypt_name = "",
                .lo_encrypt_key = "",
-               .lo_init = {0, 0}}};
+               .lo_init = {0, 0}},
+      .__reserved = {0, 0, 0, 0, 0, 0, 0, 0}};
   strncpy((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
   asprintf(loopdev, "/dev/loop%ld", devnr);
   autoclose const int loopfd = open(*loopdev, O_RDWR | O_CLOEXEC);
@@ -491,7 +500,7 @@ int main(void) {
       return 1;  // fatal error, something is drastically wrong
     }
 
-    fs_abs = malloc(sizeof("/boot") + strlen(fs));
+    fs_abs = (char*)malloc(sizeof("/boot") + strlen(fs));
     if (!fs_abs)
       return 2;  // fatal error, something is drastically wrong if realloc fails
 
