@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <linux/loop.h>
 #include <linux/magic.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,21 +34,6 @@
     typeof(a) temp = a; \
     a = b;              \
     b = temp;           \
-  } while (0)
-
-#define print(...)                  \
-  do {                              \
-    if (kmsg_f) {                   \
-      fprintf(kmsg_f, __VA_ARGS__); \
-      break;                        \
-    }                               \
-                                    \
-    printf(__VA_ARGS__);            \
-  } while (0)
-
-#define printd(...)     \
-  do {                  \
-    print(__VA_ARGS__); \
   } while (0)
 
 #define fork_exec_absolute(exe, ...)           \
@@ -100,11 +86,32 @@
     execlp(exe, exe, (char*)NULL);   \
   } while (0)
 
-#define exec_absolute_path(exe)     \
-  do {                              \
-    printd("execl(\"%s\")\n", exe); \
-    execl(exe, exe, (char*)NULL);   \
-  } while (0)
+static FILE* kmsg_f = 0;
+
+static inline void print(const char* f, ...) {
+  va_list args;
+  va_start(args, f);
+  if (kmsg_f) {
+    vfprintf(kmsg_f, f, args);
+    va_end(args);
+    return;
+  }
+
+  vprintf(f, args);
+  va_end(args);
+}
+
+static inline void printd(const char* f, ...) {
+  va_list args;
+  va_start(args, f);
+  print(f, args);
+  va_end(args);
+}
+
+static inline void exec_absolute_path(const char* exe) {
+  printd("execl(\"%s\")\n", exe);
+  execl(exe, exe, (char*)NULL);
+}
 
 static inline void cleanup_free(void* p) {
   free(*(void**)p);
@@ -174,8 +181,6 @@ static inline bool string_contains(const char* cmdline, const char c) {
   return false;
 }
 #endif
-
-static FILE* kmsg_f = 0;
 
 static inline int log_open_kmsg(void) {
   kmsg_f = fopen("/dev/kmsg", "w");
