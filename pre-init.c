@@ -304,7 +304,6 @@ static inline int switchroot(const char* newroot) {
   /*  Don't try to unmount the old "/", there's no way to do it. */
   const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
   int i;
-  int cfd = -1;
   struct stat newroot_stat, oldroot_stat, sb;
 
   if (stat("/", &oldroot_stat) != 0) {
@@ -345,25 +344,25 @@ static inline int switchroot(const char* newroot) {
     return -1;
   }
 
-  cfd = open("/", O_RDONLY);
+  autoclose const int cfd = open("/", O_RDONLY);
   if (cfd < 0) {
     print("cannot open %s", "/");
-    goto fail;
+    return -1;
   }
 
   if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
     print("failed to mount moving %s to /", newroot);
-    goto fail;
+    return -1;
   }
 
   if (chroot(".")) {
     print("failed to change root");
-    goto fail;
+    return -1;
   }
 
   if (chdir("/")) {
     print("cannot change directory to %s", "/");
-    goto fail;
+    return -1;
   }
 
   switch (fork()) {
@@ -384,13 +383,9 @@ static inline int switchroot(const char* newroot) {
       break;
 
     default: /* parent */
-      close(cfd);
       return 0;
   }
 
-fail:
-  if (cfd >= 0)
-    close(cfd);
   return -1;
 }
 
