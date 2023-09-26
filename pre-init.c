@@ -81,12 +81,6 @@
     execlp(exe, exe, __VA_ARGS__, (char*)NULL); \
   } while (0)
 
-#define exec_path(exe)               \
-  do {                               \
-    printd("execlp(\"%s\")\n", exe); \
-    execlp(exe, exe, (char*)NULL);   \
-  } while (0)
-
 static FILE* kmsg_f = 0;
 
 static inline void cleanup_free(void* p) {
@@ -173,16 +167,6 @@ static inline char* find_conf_key(const char* line, const char* key) {
 
   return NULL;
 }
-
-#if 0
-static inline bool string_contains(const char* cmdline, const char c) {
-  for (; cmdline; ++cmdline)
-    if (*cmdline == c)
-      return true;
-
-  return false;
-}
-#endif
 
 static inline int log_open_kmsg(void) {
   kmsg_f = fopen("/dev/kmsg", "w");
