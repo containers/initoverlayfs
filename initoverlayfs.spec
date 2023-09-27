@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.1
+Version:       0.2
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -25,6 +25,6 @@ install -D -m 644 -p pre-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/
 %{_prefix}/sbin/pre-init
 
 %changelog
-* Wed Sep 27 2023 Eric Curtin <ecurtin@redhat.com> - 0.1-1
+* Wed Sep 27 2023 Eric Curtin <ecurtin@redhat.com> - 0.2-1
 - Package initoverlayfs
 
