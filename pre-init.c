@@ -429,24 +429,8 @@ static inline void start_udev(void) {
                  "--subsystem-match=nvme");
 }
 
-int main(void) {
-  if (mount_proc_sys_dev()) {
-    return errno;
-  }
-
-  log_open_kmsg();
-  start_udev();
-  autofree char* cmdline = read_conf("/proc/cmdline");
-  printd("read_conf(\"%s\") = \"%s\"\n", "/proc/cmdline",
-         cmdline ? cmdline : "(nil)");
-
-  // Other than initoverlayfs and initoverlayfstype, put all other
-  // configuration in here if possible to avoid polluting kernel cmdline.
-  autofree char* conf = read_conf("/etc/initoverlayfs.conf");
-  printd("read_conf(\"%s\") = \"%s\"\n", "/etc/initoverlayfs.conf",
-         conf ? conf : "(nil)");
-
-  autofree char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
+static inline char* get_initoverlayfs(const char* cmdline) {
+  char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
   const char* token = strtok(initoverlayfs, "=");
   autofree char* initoverlayfs_tmp = 0;
   if (!strcmp(token, "LABEL")) {
@@ -462,8 +446,34 @@ int main(void) {
   printd("find_conf_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
          cmdline ? cmdline : "(nil)", initoverlayfs ? initoverlayfs : "(nil)");
 
-  autofree char* initoverlayfstype =
-      find_conf_key(cmdline, "initoverlayfstype");
+  return initoverlayfs;
+}
+
+static inline void get_cmdline_args(char** initoverlayfs,
+                                    char** initoverlayfstype) {
+  autofree char* cmdline = read_conf("/proc/cmdline");
+  printd("read_conf(\"%s\") = \"%s\"\n", "/proc/cmdline",
+         cmdline ? cmdline : "(nil)");
+  *initoverlayfs = get_initoverlayfs(cmdline);
+  *initoverlayfstype = find_conf_key(cmdline, "initoverlayfstype");
+}
+
+int main(void) {
+  if (mount_proc_sys_dev()) {
+    return errno;
+  }
+
+  log_open_kmsg();
+  start_udev();
+  autofree char* initoverlayfs;
+  autofree char* initoverlayfstype;
+  get_cmdline_args(&initoverlayfs, &initoverlayfstype);
+
+  // Other than initoverlayfs and initoverlayfstype, put all other
+  // configuration in here if possible to avoid polluting kernel cmdline.
+  autofree char* conf = read_conf("/etc/initoverlayfs.conf");
+  printd("read_conf(\"%s\") = \"%s\"\n", "/etc/initoverlayfs.conf",
+         conf ? conf : "(nil)");
 
   autofree char* fs = NULL;
   autofree char* fstype = NULL;
