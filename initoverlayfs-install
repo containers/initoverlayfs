@@ -1,0 +1,62 @@
+#!/bin/bash
+
+set -ex
+
+extract_initrd_into_initoverlayfs() {
+  DIR_TO_DUMP_INITRAMFS="/run/initoverlayfs"
+  mkdir -p "$DIR_TO_DUMP_INITRAMFS"
+
+  file_type=$(file /boot/initramfs-$uname_r.img)
+  decompressor="lz4cat"
+  decompressor_dracut="--lz4"
+  if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
+    decompressor_dracut=""
+    decompressor="zcat"
+  elif [[ "$file_type" == *"regular file, no read permission"* ]]; then
+    decompressor_dracut=""
+    decompressor="zcat"
+  fi
+
+  if command -v mkfs.erofs; then
+    cd /run/initoverlayfs/
+    /usr/lib/dracut/skipcpio /boot/initramfs-$uname_r.img | $decompressor | cpio -ivd
+    cd -
+    mkfs.erofs /boot/initoverlayfs-$uname_r.img /run/initoverlayfs/
+  else
+    fs="ext4"
+    dd if=/dev/zero of=/boot/initoverlayfs-$uname_r.img bs=64M count=1
+    dev=$(losetup -fP --show /boot/initoverlayfs-$uname_r.img)
+    mkfs.$fs $dev
+    mount $dev "$DIR_TO_DUMP_INITRAMFS"
+    cd "$DIR_TO_DUMP_INITRAMFS"
+    /usr/lib/dracut/skipcpio /boot/initramfs-$uname_r.img | zstd -d --stdout | cpio -ivd
+    sync
+    cd -
+    while ! umount "$DIR_TO_DUMP_INITRAMFS"; do
+      sleep 1
+    done
+
+    losetup -d $dev
+  fi
+}
+
+uname_r="$(uname -r)"
+file_type="$(file /boot/initramfs-$uname_r.img)"
+decompressor="lz4cat"
+decompressor_dracut="--lz4"
+if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
+  decompressor_dracut=""
+  decompressor="zcat"
+elif [[ "$file_type" == *"regular file, no read permission"* ]]; then
+  decompressor_dracut=""
+  decompressor="zcat"
+fi
+
+extract_initrd_into_initoverlayfs
+dracut -f -M -m "kernel-modules udev-rules" -o "bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown"
+
+if command -v grubby; then
+  boot_partition=$(cat /etc/fstab | grep "/boot.*ext4" | awk '{print $1}')
+  grubby --args "initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init" --update-kernel=ALL
+fi
+
