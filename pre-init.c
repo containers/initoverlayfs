@@ -97,7 +97,7 @@ static inline void print(const char* f, ...) {
   vprintf(f, args);
 }
 
-#if 0
+#if 1
 static inline void printd(const char* f, ...) {
   autova_end va_list args;
   va_start(args, f);

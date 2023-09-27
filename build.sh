@@ -35,6 +35,7 @@ extract_initrd_into_initoverlayfs() {
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
     sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | $decompressor | sudo cpio -ivd
+    cd -
   else
     fs="ext4"
     dd if=/dev/zero of=/boot/initoverlayfs-$release.img bs=64M count=1
@@ -51,8 +52,6 @@ extract_initrd_into_initoverlayfs() {
 
     sudo losetup -d $dev
   fi
-
-  cd -
 }
 
 cd 

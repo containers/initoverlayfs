@@ -8,6 +8,8 @@ URL:           https://github.com/ericcurtin/initoverlayfs
 Source0:       %{url}/archive/%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires: gcc
+Recommends: grubby
+Recommends: erofs-utils
 
 %global dracutdir %(pkg-config --variable=dracutdir dracut)
 %global debug_package %{nil}
