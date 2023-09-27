@@ -114,8 +114,9 @@ sudo du -sh $initramfs
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
 sudo du -sh /boot/initramfs*
-sudo cp -r lib/dracut/modules.d/81pre-initoverlayfs /usr/lib/dracut/modules.d/
+sudo cp -r lib/dracut/modules.d/81initoverlayfs /usr/lib/dracut/modules.d/
 sudo rm -rf /usr/lib/dracut/modules.d/*pre-initramfs
+sudo rm -rf /usr/lib/dracut/modules.d/*pre-initoverlayfs
 
 set -x
 
