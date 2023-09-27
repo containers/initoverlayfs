@@ -29,7 +29,7 @@ install -D -m744 pre-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/pre-init
 install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD_ROOT%{dracutdir}/modules.d/81initoverlayfs/module-setup.sh
 
 %files
-install -D -m644 initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
+%{_bindir}/initoverlayfs-install
 %{_prefix}/sbin/pre-init
 %{dracutdir}/modules.d/81initoverlayfs/module-setup.sh
 
