@@ -209,7 +209,9 @@ static inline int loop_configure(const long devnr,
                .lo_init = {0, 0}},
       .__reserved = {0, 0, 0, 0, 0, 0, 0, 0}};
   strncpy((char*)loopconfig.info.lo_file_name, file, LO_NAME_SIZE - 1);
-  asprintf(loopdev, "/dev/loop%ld", devnr);
+  if (asprintf(loopdev, "/dev/loop%ld", devnr) < 0)
+    return errno;
+
   autoclose const int loopfd = open(*loopdev, O_RDWR | O_CLOEXEC);
   if (loopfd < 0) {
     print("open(\"%s\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n", *loopdev, loopfd,
@@ -335,7 +337,8 @@ static inline int switchroot(const char* newroot) {
   for (i = 0; umounts[i] != NULL; i++) {
     autofree char* newmount;
 
-    asprintf(&newmount, "%s%s", newroot, umounts[i]);
+    if (asprintf(&newmount, "%s%s", newroot, umounts[i]))
+      return -1;
 
     if ((stat(umounts[i], &sb) == 0) && sb.st_dev == oldroot_stat.st_dev) {
       /* mount point to move seems to be a normal directory or stat failed */
@@ -451,11 +454,15 @@ static inline char* get_initoverlayfs(const char* cmdline) {
   autofree char* initoverlayfs_tmp = 0;
   if (!strcmp(token, "LABEL")) {
     token = strtok(NULL, "=");
-    asprintf(&initoverlayfs_tmp, "/dev/disk/by-label/%s", token);
+    if (asprintf(&initoverlayfs_tmp, "/dev/disk/by-label/%s", token) < 0)
+      return NULL;
+
     SWAP(initoverlayfs, initoverlayfs_tmp);
   } else if (!strcmp(token, "UUID")) {
     token = strtok(NULL, "=");
-    asprintf(&initoverlayfs_tmp, "/dev/disk/by-uuid/%s", token);
+    if (asprintf(&initoverlayfs_tmp, "/dev/disk/by-uuid/%s", token) < 0)
+      return NULL;
+
     SWAP(initoverlayfs, initoverlayfs_tmp);
   }
 
@@ -549,8 +556,8 @@ int main(void) {
 
   log_open_kmsg();
   start_udev();
-  autofree char* initoverlayfs;
-  autofree char* initoverlayfstype;
+  autofree char* initoverlayfs = NULL;
+  autofree char* initoverlayfstype = NULL;
   get_cmdline_args(&initoverlayfs, &initoverlayfstype);
 
   autofree char* fs = NULL;

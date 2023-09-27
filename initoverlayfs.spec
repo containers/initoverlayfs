@@ -12,6 +12,9 @@ BuildRequires: gcc
 %description
 %{summary}.
 
+%prep
+%setup -q -n %{name}-%{version}
+
 %build
 gcc ${RPM_OPT_FLAGS} pre-init.c -o pre-init
 
