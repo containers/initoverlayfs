@@ -506,14 +506,13 @@ int main(void) {
   if (ret)
     return ret;
 
+  fork_exec_absolute("/usr/sbin/modprobe", "loop");
   fork_exec_path("udevadm", "wait", initoverlayfs);
   if (mount(initoverlayfs, "/boot", initoverlayfstype, 0, NULL))
     print(
         "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
         "%d (%s)\n",
         initoverlayfs, initoverlayfstype, errno, strerror(errno));
-
-  fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
   autofree char* dev_loop = 0;
   if (fs && losetup(&dev_loop, fs))
