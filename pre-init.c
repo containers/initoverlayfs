@@ -169,28 +169,28 @@ static inline int log_open_kmsg(void) {
   return 0;
 }
 
-static inline int losetup(char** loopdev, const char* file) {
+static inline long loop_ctl_get_free(void) {
   autoclose const int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
   if (loopctlfd < 0) {
     print("open(\"/dev/loop-control\", O_RDWR | O_CLOEXEC) = %d %d (%s)\n",
           loopctlfd, errno, strerror(errno));
-    return errno;
+    return 0;  // in error just try and continue with loop0
   }
 
   const long devnr = ioctl(loopctlfd, LOOP_CTL_GET_FREE);
   if (devnr < 0) {
     print("ioctl(%d, LOOP_CTL_GET_FREE) = %ld %d (%s)\n", loopctlfd, devnr,
           errno, strerror(errno));
-    return errno;
+    return 0;  // in error just try and continue with loop0
   }
 
-  autoclose const int filefd = open(file, O_RDONLY | O_CLOEXEC);
-  if (filefd < 0) {
-    print("open(\"%s\", O_RDONLY| O_CLOEXEC) = %d %d (%s)\n", file, filefd,
-          errno, strerror(errno));
-    return errno;
-  }
+  return devnr;
+}
 
+static inline int loop_configure(const long devnr,
+                                 const int filefd,
+                                 char** loopdev,
+                                 const char* file) {
   const struct loop_config loopconfig = {
       .fd = (unsigned int)filefd,
       .block_size = 0,
@@ -222,6 +222,21 @@ static inline int losetup(char** loopdev, const char* file) {
           errno, strerror(errno));
     return errno;
   }
+
+  return 0;
+}
+
+static inline int losetup(char** loopdev, const char* file) {
+  autoclose const int filefd = open(file, O_RDONLY | O_CLOEXEC);
+  if (filefd < 0) {
+    print("open(\"%s\", O_RDONLY| O_CLOEXEC) = %d %d (%s)\n", file, filefd,
+          errno, strerror(errno));
+    return errno;
+  }
+
+  const int ret = loop_configure(loop_ctl_get_free(), filefd, loopdev, file);
+  if (ret)
+    return ret;
 
   return 0;
 }
@@ -297,6 +312,7 @@ done:
     closedir(dir);
   else
     close(fd);
+
   return rc;
 }
 
@@ -489,25 +505,10 @@ static inline int get_conf_args(char** fs, char** fstype) {
   return 0;
 }
 
-int main(void) {
-  if (mount_proc_sys_dev()) {
-    return errno;
-  }
-
-  log_open_kmsg();
-  start_udev();
-  autofree char* initoverlayfs;
-  autofree char* initoverlayfstype;
-  get_cmdline_args(&initoverlayfs, &initoverlayfstype);
-
-  autofree char* fs = NULL;
-  autofree char* fstype = NULL;
-  const int ret = get_conf_args(&fs, &fstype);
-  if (ret)
-    return ret;
-
-  fork_exec_absolute("/usr/sbin/modprobe", "loop");
-  fork_exec_path("udevadm", "wait", initoverlayfs);
+static inline void mounts(const char* initoverlayfs,
+                          const char* initoverlayfstype,
+                          const char* fs,
+                          const char* fstype) {
   if (mount(initoverlayfs, "/boot", initoverlayfstype, 0, NULL))
     print(
         "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
@@ -539,7 +540,28 @@ int main(void) {
         "mount(\"/boot\", \"/initoverlayfs/boot\", \"%s\", MS_MOVE, NULL) "
         "%d (%s)\n",
         initoverlayfstype, errno, strerror(errno));
+}
 
+int main(void) {
+  if (mount_proc_sys_dev()) {
+    return errno;
+  }
+
+  log_open_kmsg();
+  start_udev();
+  autofree char* initoverlayfs;
+  autofree char* initoverlayfstype;
+  get_cmdline_args(&initoverlayfs, &initoverlayfstype);
+
+  autofree char* fs = NULL;
+  autofree char* fstype = NULL;
+  const int ret = get_conf_args(&fs, &fstype);
+  if (ret)
+    return ret;
+
+  fork_exec_absolute("/usr/sbin/modprobe", "loop");
+  fork_exec_path("udevadm", "wait", initoverlayfs);
+  mounts(initoverlayfs, initoverlayfstype, fs, fstype);
   if (switchroot("/initoverlayfs"))
     print("switchroot(\"initoverlayfs\") %d (%s)\n", errno, strerror(errno));
 
