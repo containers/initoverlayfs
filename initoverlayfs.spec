@@ -9,6 +9,8 @@ Source0:       %{url}/archive/%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires: gcc
 
+%global debug_package %{nil}
+
 %description
 %{summary}.
 
@@ -19,7 +21,7 @@ BuildRequires: gcc
 gcc ${RPM_OPT_FLAGS} pre-init.c -o pre-init
 
 %install
-install -D -m 644 -p pre-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/
+install -D -m 644 -p pre-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/pre-init
 
 %files
 %{_prefix}/sbin/pre-init
