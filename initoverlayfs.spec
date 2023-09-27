@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.3
+Version:       0.4
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -34,6 +34,6 @@ install -D -m644 initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayf
 %{dracutdir}/modules.d/81initoverlayfs/module-setup.sh
 
 %changelog
-* Wed Sep 27 2023 Eric Curtin <ecurtin@redhat.com> - 0.3-1
+* Wed Sep 27 2023 Eric Curtin <ecurtin@redhat.com> - 0.4-1
 - Package initoverlayfs
 
