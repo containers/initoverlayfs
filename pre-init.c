@@ -458,6 +458,37 @@ static inline void get_cmdline_args(char** initoverlayfs,
   *initoverlayfstype = find_conf_key(cmdline, "initoverlayfstype");
 }
 
+static inline int get_conf_args(char** fs, char** fstype) {
+  // Other than initoverlayfs and initoverlayfstype, put all other
+  // configuration in here if possible to avoid polluting kernel cmdline.
+  autofree char* conf = read_conf("/etc/initoverlayfs.conf");
+  printd("read_conf(\"%s\") = \"%s\"\n", "/etc/initoverlayfs.conf",
+         conf ? conf : "(nil)");
+  if (conf) {
+    autofree char* fs_tmp = find_conf_key(conf, "fs");
+
+    if (!fs_tmp) {
+      print("return 1;\n");
+      return 1;  // fatal error, something is drastically wrong
+    }
+
+    *fs = (char*)malloc(sizeof("/boot") + strlen(fs_tmp));
+    if (!*fs)
+      return 2;  // fatal error, something is drastically wrong if realloc fails
+
+    strcpy(*fs, "/boot");
+    strcpy(*fs + sizeof("/boot") - 1, fs_tmp);
+
+    printd("strcpy(\"%s\", \"/boot\")\n", *fs ? *fs : "(nil)");
+
+    *fstype = find_conf_key(conf, "fstype");
+    printd("find_conf_key(\"%s\", \"fstype\") = \"%s\"\n",
+           conf ? conf : "(nil)", *fstype ? *fstype : "(nil)");
+  }
+
+  return 0;
+}
+
 int main(void) {
   if (mount_proc_sys_dev()) {
     return errno;
@@ -469,36 +500,11 @@ int main(void) {
   autofree char* initoverlayfstype;
   get_cmdline_args(&initoverlayfs, &initoverlayfstype);
 
-  // Other than initoverlayfs and initoverlayfstype, put all other
-  // configuration in here if possible to avoid polluting kernel cmdline.
-  autofree char* conf = read_conf("/etc/initoverlayfs.conf");
-  printd("read_conf(\"%s\") = \"%s\"\n", "/etc/initoverlayfs.conf",
-         conf ? conf : "(nil)");
-
   autofree char* fs = NULL;
   autofree char* fstype = NULL;
-  autofree char* fs_abs = NULL;
-  if (conf) {
-    fs = find_conf_key(conf, "fs");
-
-    if (!fs) {
-      print("return 1;\n");
-      return 1;  // fatal error, something is drastically wrong
-    }
-
-    fs_abs = (char*)malloc(sizeof("/boot") + strlen(fs));
-    if (!fs_abs)
-      return 2;  // fatal error, something is drastically wrong if realloc fails
-
-    strcpy(fs_abs, "/boot");
-    strcpy(fs_abs + sizeof("/boot") - 1, fs);
-
-    printd("strcpy(\"%s\", \"/boot\")\n", fs_abs ? fs_abs : "(nil)");
-
-    fstype = find_conf_key(conf, "fstype");
-    printd("find_conf_key(\"%s\", \"fstype\") = \"%s\"\n",
-           conf ? conf : "(nil)", fstype ? fstype : "(nil)");
-  }
+  const int ret = get_conf_args(&fs, &fstype);
+  if (ret)
+    return ret;
 
   fork_exec_path("udevadm", "wait", initoverlayfs);
   if (mount(initoverlayfs, "/boot", initoverlayfstype, 0, NULL))
@@ -510,8 +516,8 @@ int main(void) {
   fork_exec_absolute("/usr/sbin/modprobe", "loop");
 
   autofree char* dev_loop = 0;
-  if (fs_abs && losetup(&dev_loop, fs_abs))
-    print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs_abs, errno,
+  if (fs && losetup(&dev_loop, fs))
+    print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, fs, errno,
           strerror(errno));
 
   if (mount(dev_loop, "/initrofs", fstype, MS_RDONLY, NULL))
