@@ -37,6 +37,20 @@
     b = temp;           \
   } while (0)
 
+#define fork_exec_absolute_no_wait(pid, exe, ...) \
+  do {                                            \
+    printd("execl(\"%s\")\n", exe);               \
+    pid = fork();                                 \
+    if (pid == -1) {                              \
+      print("fail exec_absolute\n");              \
+      break;                                      \
+    } else if (pid > 0) {                         \
+      break;                                      \
+    }                                             \
+                                                  \
+    execl(exe, exe, __VA_ARGS__, (char*)NULL);    \
+  } while (0)
+
 #define fork_exec_absolute(exe, ...)           \
   do {                                         \
     printd("execl(\"%s\")\n", exe);            \
@@ -409,33 +423,46 @@ static inline int switchroot(const char* newroot) {
 }
 
 static inline int mount_proc_sys_dev(void) {
-  if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
+  pid_t pid = fork();
+  if (!pid) { /* child */
+    if (!mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL))
+      exit(EXIT_SUCCESS);
+
     print(
         "mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID | MS_NOEXEC | "
-        "MS_NODEV, "
-        "NULL) %d (%s)\n",
+        "MS_NODEV, NULL) %d (%s)\n",
         errno, strerror(errno));
     return errno;
-  }
+  } else if (pid < 0) /* error */
+    return errno;
 
-  if (mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
+  pid = fork();
+  if (!pid) { /* child */
+    if (!mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV,
+               NULL))
+      exit(EXIT_SUCCESS);
+
     print(
         "mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID | MS_NOEXEC | "
-        "MS_NODEV, "
-        "NULL) %d (%s)\n",
+        "MS_NODEV, NULL) %d (%s)\n",
         errno, strerror(errno));
     return errno;
-  }
+  } else if (pid < 0) /* error */
+    return errno;
 
-  if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID | MS_STRICTATIME,
-            "mode=0755,size=4m")) {
+  pid = fork();
+  if (!pid) { /* child */
+    if (!mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID | MS_STRICTATIME,
+               "mode=0755,size=4m"))
+      exit(EXIT_SUCCESS);
+
     print(
         "mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID | "
-        "MS_STRICTATIME, "
-        "NULL) %d (%s)\n",
+        "MS_STRICTATIME, \"mode=0755,size=4m\") %d (%s)\n",
         errno, strerror(errno));
     return errno;
-  }
+  } else if (pid < 0) /* error */
+    return errno;
 
   return 0;
 }
@@ -549,10 +576,25 @@ static inline void mounts(const char* initoverlayfs,
         initoverlayfstype, errno, strerror(errno));
 }
 
+static inline int wait_all(void) {
+  pid_t wpid;
+  for (int status = 0; (wpid = wait(&status)) > 0;)
+    if (status)
+      return status;
+
+  errno = 0;
+
+  return 0;
+}
+
 int main(void) {
   if (mount_proc_sys_dev()) {
     return errno;
   }
+
+  int ret = wait_all();
+  if (ret)
+    return ret;
 
   log_open_kmsg();
   start_udev();
@@ -562,12 +604,16 @@ int main(void) {
 
   autofree char* fs = NULL;
   autofree char* fstype = NULL;
-  const int ret = get_conf_args(&fs, &fstype);
+  ret = get_conf_args(&fs, &fstype);
   if (ret)
     return ret;
 
-  fork_exec_absolute("/usr/sbin/modprobe", "loop");
+  pid_t pid;
+  fork_exec_absolute_no_wait(pid, "/usr/sbin/modprobe", "loop");
   fork_exec_path("udevadm", "wait", initoverlayfs);
+  waitpid(pid, 0, 0);
+  errno = 0;
+
   mounts(initoverlayfs, initoverlayfstype, fs, fstype);
   if (switchroot("/initoverlayfs"))
     print("switchroot(\"initoverlayfs\") %d (%s)\n", errno, strerror(errno));
