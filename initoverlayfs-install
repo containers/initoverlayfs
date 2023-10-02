@@ -53,7 +53,7 @@ elif [[ "$file_type" == *"regular file, no read permission"* ]]; then
 fi
 
 extract_initrd_into_initoverlayfs
-dracut -f -M -m "kernel-modules udev-rules" -o "bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown"
+dracut -f -M -m "kernel-modules udev-rules initoverlayfs" -o "bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown"
 
 if command -v grubby; then
   boot_partition=$(cat /etc/fstab | grep "/boot.*ext4" | awk '{print $1}')

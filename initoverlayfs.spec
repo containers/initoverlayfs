@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.4
+Version:       0.5
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -26,14 +26,16 @@ gcc ${RPM_OPT_FLAGS} pre-init.c -o pre-init
 %install
 install -D -m744 initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
 install -D -m744 pre-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/pre-init
-install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD_ROOT%{dracutdir}/modules.d/81initoverlayfs/module-setup.sh
+install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD_ROOT/%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %files
 %{_bindir}/initoverlayfs-install
 %{_prefix}/sbin/pre-init
-%{dracutdir}/modules.d/81initoverlayfs/module-setup.sh
+%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %changelog
+* Mon Oct 2 2023 Eric Curtin <ecurtin@redhat.com> - 0.5-1
+- Add dracut files to initramfs
 * Wed Sep 27 2023 Eric Curtin <ecurtin@redhat.com> - 0.4-1
 - Package initoverlayfs
 
