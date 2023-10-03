@@ -3,7 +3,7 @@
 set -ex
 
 extract_initrd_into_initoverlayfs() {
-  DIR_TO_DUMP_INITRAMFS="/run/initoverlayfs"
+  DIR_TO_DUMP_INITRAMFS="/var/tmp/initoverlayfs"
   mkdir -p "$DIR_TO_DUMP_INITRAMFS"
 
   file_type=$(file /boot/initramfs-$uname_r.img)
@@ -18,15 +18,17 @@ extract_initrd_into_initoverlayfs() {
   fi
 
   if command -v mkfs.erofs; then
-    cd /run/initoverlayfs/
+    fstype="erofs"
+    cd "$DIR_TO_DUMP_INITRAMFS"
     /usr/lib/dracut/skipcpio /boot/initramfs-$uname_r.img | $decompressor | cpio -ivd
     cd -
-    mkfs.erofs /boot/initoverlayfs-$uname_r.img /run/initoverlayfs/
+    rm -f /boot/initoverlayfs-$uname_r.img
+    mkfs.erofs /boot/initoverlayfs-$uname_r.img "$DIR_TO_DUMP_INITRAMFS"
   else
-    fs="ext4"
+    fstype="ext4"
     dd if=/dev/zero of=/boot/initoverlayfs-$uname_r.img bs=64M count=1
     dev=$(losetup -fP --show /boot/initoverlayfs-$uname_r.img)
-    mkfs.$fs $dev
+    mkfs.$fstype $dev
     mount $dev "$DIR_TO_DUMP_INITRAMFS"
     cd "$DIR_TO_DUMP_INITRAMFS"
     /usr/lib/dracut/skipcpio /boot/initramfs-$uname_r.img | zstd -d --stdout | cpio -ivd
@@ -41,18 +43,10 @@ extract_initrd_into_initoverlayfs() {
 }
 
 uname_r="$(uname -r)"
-file_type="$(file /boot/initramfs-$uname_r.img)"
-decompressor="lz4cat"
-decompressor_dracut="--lz4"
-if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
-  decompressor_dracut=""
-  decompressor="zcat"
-elif [[ "$file_type" == *"regular file, no read permission"* ]]; then
-  decompressor_dracut=""
-  decompressor="zcat"
-fi
 
 extract_initrd_into_initoverlayfs
+initoverlayfs_conf="/etc/initoverlayfs.conf"
+echo "fs=initoverlayfs-$uname_r.img fstype=$fstype" > $initoverlayfs_conf
 dracut -f -M -m "kernel-modules udev-rules initoverlayfs" -o "bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown"
 
 if command -v grubby; then
