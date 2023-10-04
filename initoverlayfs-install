@@ -46,7 +46,7 @@ uname_r="$(uname -r)"
 
 extract_initrd_into_initoverlayfs
 initoverlayfs_conf="/etc/initoverlayfs.conf"
-echo "fs=initoverlayfs-$uname_r.img fstype=$fstype" > $initoverlayfs_conf
+echo "fs=/initoverlayfs-$uname_r.img fstype=$fstype" > $initoverlayfs_conf
 dracut -f -M -m "kernel-modules udev-rules initoverlayfs" -o "bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown"
 
 if command -v grubby; then

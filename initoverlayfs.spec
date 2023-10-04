@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.6
+Version:       0.7
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -11,7 +11,6 @@ BuildRequires: gcc
 Recommends: grubby
 Recommends: erofs-utils
 
-%global dracutdir %(pkg-config --variable=dracutdir dracut)
 %global debug_package %{nil}
 
 %description
@@ -34,6 +33,8 @@ install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %changelog
+* Wed Oct 4 2023 Eric Curtin <ecurtin@redhat.com> - 0.7-1
+- Some bugfixes, leading / in fs=, asprintf check incorrect
 * Tue Oct 3 2023 Eric Curtin <ecurtin@redhat.com> - 0.6-1
 - initoverlayfs-install generates /etc/initoverlayfs.conf
 * Mon Oct 2 2023 Eric Curtin <ecurtin@redhat.com> - 0.5-1

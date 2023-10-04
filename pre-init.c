@@ -332,27 +332,97 @@ done:
   return rc;
 }
 
-static inline int switchroot(const char* newroot) {
-  /*  Don't try to unmount the old "/", there's no way to do it. */
-  const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
-  int i;
-  struct stat newroot_stat, oldroot_stat, sb;
+static inline int move_chroot_chdir(const char* newroot) {
+  if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
+    print("failed to mount moving %s to /", newroot);
+    return -1;
+  }
 
-  if (stat("/", &oldroot_stat) != 0) {
+  if (chroot(".")) {
+    print("failed to change root");
+    return -1;
+  }
+
+  if (chdir("/")) {
+    print("cannot change directory to %s", "/");
+    return -1;
+  }
+
+  return 0;
+}
+
+static inline int switchroot_move(const char* newroot) {
+  if (chdir(newroot)) {
+    print("failed to change directory to %s", newroot);
+    return -1;
+  }
+
+  autoclose const int cfd = open("/", O_RDONLY);
+  if (cfd < 0) {
+    print("cannot open %s", "/");
+    return -1;
+  }
+
+  if (move_chroot_chdir(newroot))
+    return -1;
+
+  switch (fork()) {
+    case 0: /* child */
+    {
+      struct statfs stfs;
+
+      if (fstatfs(cfd, &stfs) == 0 &&
+          (stfs.f_type == RAMFS_MAGIC || stfs.f_type == TMPFS_MAGIC))
+        recursiveRemove(cfd);
+      else {
+        print("old root filesystem is not an initramfs");
+        close(cfd);
+      }
+
+      exit(EXIT_SUCCESS);
+    }
+    case -1: /* error */
+      break;
+
+    default: /* parent */
+      return 0;
+  }
+
+  return -1;
+}
+
+static inline int stat_oldroot_newroot(const char* newroot,
+                                       struct stat* newroot_stat,
+                                       struct stat* oldroot_stat) {
+  if (stat("/", oldroot_stat) != 0) {
     print("stat of %s failed", "/");
     return -1;
   }
 
-  if (stat(newroot, &newroot_stat) != 0) {
+  if (stat(newroot, newroot_stat) != 0) {
     print("stat of %s failed", newroot);
     return -1;
   }
 
-  for (i = 0; umounts[i] != NULL; i++) {
-    autofree char* newmount;
+  return 0;
+}
 
-    if (asprintf(&newmount, "%s%s", newroot, umounts[i]))
+static inline int switchroot(const char* newroot) {
+  /*  Don't try to unmount the old "/", there's no way to do it. */
+  const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
+  struct stat newroot_stat, oldroot_stat, sb;
+
+  if (stat_oldroot_newroot(newroot, &newroot_stat, &oldroot_stat))
+    return -1;
+
+  for (int i = 0; umounts[i] != NULL; ++i) {
+    autofree char* newmount;
+    if (asprintf(&newmount, "%s%s", newroot, umounts[i]) < 0) {
+      print(
+          "asprintf(%p, \"%%s%%s\", \"%s\", \"%s\") MS_NODEV, NULL) %d (%s)\n",
+          newmount, newroot, umounts[i], errno, strerror(errno));
       return -1;
+    }
 
     if ((stat(umounts[i], &sb) == 0) && sb.st_dev == oldroot_stat.st_dev) {
       /* mount point to move seems to be a normal directory or stat failed */
@@ -372,54 +442,7 @@ static inline int switchroot(const char* newroot) {
     }
   }
 
-  if (chdir(newroot)) {
-    print("failed to change directory to %s", newroot);
-    return -1;
-  }
-
-  autoclose const int cfd = open("/", O_RDONLY);
-  if (cfd < 0) {
-    print("cannot open %s", "/");
-    return -1;
-  }
-
-  if (mount(newroot, "/", NULL, MS_MOVE, NULL) < 0) {
-    print("failed to mount moving %s to /", newroot);
-    return -1;
-  }
-
-  if (chroot(".")) {
-    print("failed to change root");
-    return -1;
-  }
-
-  if (chdir("/")) {
-    print("cannot change directory to %s", "/");
-    return -1;
-  }
-
-  switch (fork()) {
-    case 0: /* child */
-    {
-      struct statfs stfs;
-
-      if (fstatfs(cfd, &stfs) == 0 &&
-          (stfs.f_type == RAMFS_MAGIC || stfs.f_type == TMPFS_MAGIC))
-        recursiveRemove(cfd);
-      else {
-        print("old root filesystem is not an initramfs");
-        close(cfd);
-      }
-      exit(EXIT_SUCCESS);
-    }
-    case -1: /* error */
-      break;
-
-    default: /* parent */
-      return 0;
-  }
-
-  return -1;
+  return switchroot_move(newroot);
 }
 
 static inline int mount_proc_sys_dev(void) {
