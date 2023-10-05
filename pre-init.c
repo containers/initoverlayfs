@@ -498,41 +498,40 @@ static inline void start_udev(void) {
                  "--subsystem-match=nvme");
 }
 
-static inline char* get_initoverlayfs(const char* cmdline) {
-  char* initoverlayfs = find_conf_key(cmdline, "initoverlayfs");
-  const char* token = strtok(initoverlayfs, "=");
-  autofree char* initoverlayfs_tmp = 0;
+static inline char* get_bootfs(const char* cmdline) {
+  char* bootfs = find_conf_key(cmdline, "initoverlayfs.bootfs");
+  const char* token = strtok(bootfs, "=");
+  autofree char* bootfs_tmp = 0;
   if (!strcmp(token, "LABEL")) {
     token = strtok(NULL, "=");
-    if (asprintf(&initoverlayfs_tmp, "/dev/disk/by-label/%s", token) < 0)
+    if (asprintf(&bootfs_tmp, "/dev/disk/by-label/%s", token) < 0)
       return NULL;
 
-    SWAP(initoverlayfs, initoverlayfs_tmp);
+    SWAP(bootfs, bootfs_tmp);
   } else if (!strcmp(token, "UUID")) {
     token = strtok(NULL, "=");
-    if (asprintf(&initoverlayfs_tmp, "/dev/disk/by-uuid/%s", token) < 0)
+    if (asprintf(&bootfs_tmp, "/dev/disk/by-uuid/%s", token) < 0)
       return NULL;
 
-    SWAP(initoverlayfs, initoverlayfs_tmp);
+    SWAP(bootfs, bootfs_tmp);
   }
 
-  printd("find_conf_key(\"%s\", \"initoverlayfs\") = \"%s\"\n",
-         cmdline ? cmdline : "(nil)", initoverlayfs ? initoverlayfs : "(nil)");
+  printd("find_conf_key(\"%s\", \"bootfs\") = \"%s\"\n",
+         cmdline ? cmdline : "(nil)", bootfs ? bootfs : "(nil)");
 
-  return initoverlayfs;
+  return bootfs;
 }
 
-static inline void get_cmdline_args(char** initoverlayfs,
-                                    char** initoverlayfstype) {
+static inline void get_cmdline_args(char** bootfs, char** bootfstype) {
   autofree char* cmdline = read_conf("/proc/cmdline");
   printd("read_conf(\"%s\") = \"%s\"\n", "/proc/cmdline",
          cmdline ? cmdline : "(nil)");
-  *initoverlayfs = get_initoverlayfs(cmdline);
-  *initoverlayfstype = find_conf_key(cmdline, "initoverlayfstype");
+  *bootfs = get_bootfs(cmdline);
+  *bootfstype = find_conf_key(cmdline, "initoverlayfs.bootfstype");
 }
 
 static inline int get_conf_args(char** fs, char** fstype) {
-  // Other than initoverlayfs and initoverlayfstype, put all other
+  // Other than initoverlayfs.bootfs and initoverlay.bootfstype, put all other
   // configuration in here if possible to avoid polluting kernel cmdline.
   autofree char* conf = read_conf("/etc/initoverlayfs.conf");
   printd("read_conf(\"%s\") = \"%s\"\n", "/etc/initoverlayfs.conf",
@@ -562,15 +561,15 @@ static inline int get_conf_args(char** fs, char** fstype) {
   return 0;
 }
 
-static inline void mounts(const char* initoverlayfs,
-                          const char* initoverlayfstype,
+static inline void mounts(const char* bootfs,
+                          const char* bootfstype,
                           const char* fs,
                           const char* fstype) {
-  if (mount(initoverlayfs, "/boot", initoverlayfstype, 0, NULL))
+  if (mount(bootfs, "/boot", bootfstype, 0, NULL))
     print(
         "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
         "%d (%s)\n",
-        initoverlayfs, initoverlayfstype, errno, strerror(errno));
+        bootfs, bootfstype, errno, strerror(errno));
 
   autofree char* dev_loop = 0;
   if (fs && losetup(&dev_loop, fs))
@@ -592,11 +591,11 @@ static inline void mounts(const char* initoverlayfs,
         "upper,workdir=/overlay/work\") %d (%s)\n",
         errno, strerror(errno));
 
-  if (mount("/boot", "/initoverlayfs/boot", initoverlayfstype, MS_MOVE, NULL))
+  if (mount("/boot", "/initoverlayfs/boot", bootfstype, MS_MOVE, NULL))
     print(
         "mount(\"/boot\", \"/initoverlayfs/boot\", \"%s\", MS_MOVE, NULL) "
         "%d (%s)\n",
-        initoverlayfstype, errno, strerror(errno));
+        bootfstype, errno, strerror(errno));
 }
 
 static inline int wait_all(void) {
@@ -621,9 +620,9 @@ int main(void) {
 
   log_open_kmsg();
   start_udev();
-  autofree char* initoverlayfs = NULL;
-  autofree char* initoverlayfstype = NULL;
-  get_cmdline_args(&initoverlayfs, &initoverlayfstype);
+  autofree char* bootfs = NULL;
+  autofree char* bootfstype = NULL;
+  get_cmdline_args(&bootfs, &bootfstype);
 
   autofree char* fs = NULL;
   autofree char* fstype = NULL;
@@ -633,11 +632,11 @@ int main(void) {
 
   pid_t pid;
   fork_exec_absolute_no_wait(pid, "/usr/sbin/modprobe", "loop");
-  fork_exec_path("udevadm", "wait", initoverlayfs);
+  fork_exec_path("udevadm", "wait", bootfs);
   waitpid(pid, 0, 0);
   errno = 0;
 
-  mounts(initoverlayfs, initoverlayfstype, fs, fstype);
+  mounts(bootfs, bootfstype, fs, fstype);
   if (switchroot("/initoverlayfs"))
     print("switchroot(\"initoverlayfs\") %d (%s)\n", errno, strerror(errno));
 

@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.7
+Version:       0.8
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -33,6 +33,8 @@ install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %changelog
+* Thu Oct 5 2023 Eric Curtin <ecurtin@redhat.com> - 0.8-1
+- Change to initoverlayfs.bootfs and initoverlay.bootfstype
 * Wed Oct 4 2023 Eric Curtin <ecurtin@redhat.com> - 0.7-1
 - Some bugfixes, leading / in fs=, asprintf check incorrect
 * Tue Oct 3 2023 Eric Curtin <ecurtin@redhat.com> - 0.6-1

@@ -51,6 +51,6 @@ dracut -f -M -m "kernel-modules udev-rules initoverlayfs" -o "bash systemd syste
 
 if command -v grubby; then
   boot_partition=$(cat /etc/fstab | grep "/boot.*ext4" | awk '{print $1}')
-  grubby --args "initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init" --update-kernel=ALL
+  grubby --args "initoverlayfs.bootfs=$boot_partition initoverlayfs.bootfstype=ext4 rdinit=/usr/sbin/pre-init" --update-kernel=ALL
 fi
 
