@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.8
+Version:       0.9
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -8,7 +8,6 @@ URL:           https://github.com/ericcurtin/initoverlayfs
 Source0:       %{url}/archive/%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires: gcc
-Recommends: grubby
 Recommends: erofs-utils
 
 %global debug_package %{nil}
@@ -20,10 +19,11 @@ Recommends: erofs-utils
 %setup -q -n %{name}-%{version}
 
 %build
+RPM_OPT_FLAGS="${RPM_OPT_FLAGS/-flto=auto /}"
 gcc ${RPM_OPT_FLAGS} pre-init.c -o pre-init
 
 %install
-install -D -m744 initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
+install -D -m744 bin/initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
 install -D -m744 pre-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/pre-init
 install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD_ROOT/%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
@@ -33,6 +33,8 @@ install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %changelog
+* Thu Oct 12 2023 Eric Curtin <ecurtin@redhat.com> - 0.8-1
+- Change to bls_parser, split into separate files. Remove grub dependancy.
 * Thu Oct 5 2023 Eric Curtin <ecurtin@redhat.com> - 0.8-1
 - Change to initoverlayfs.bootfs and initoverlay.bootfstype
 * Wed Oct 4 2023 Eric Curtin <ecurtin@redhat.com> - 0.7-1
