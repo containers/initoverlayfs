@@ -137,6 +137,6 @@ bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)
 sudo systemctl daemon-reload
 #sudo sed -i "s#options #options initoverlayfs=UUID=$uuid initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
-sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
+#sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
 
