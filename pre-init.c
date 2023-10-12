@@ -241,9 +241,10 @@ static inline int recursiveRemove(const int fd) {
 
       /* remove subdirectories */
       if (S_ISDIR(sb.st_mode)) {
-        const int cfd = openat(dfd, d->d_name, O_RDONLY);
+        autoclose const int cfd = openat(dfd, d->d_name, O_RDONLY);
         if (cfd >= 0)
           recursiveRemove(cfd); /* it closes cfd too */
+
         isdir = 1;
       }
     }
