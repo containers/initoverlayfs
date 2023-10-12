@@ -104,7 +104,7 @@ static inline void cleanup_free_str(str** p) {
 }
 
 static inline void cleanup_close(const int* fd) {
-  if (*fd > 2)  // protect stdout, stdin, stderr
+  if (*fd >= 0)
     close(*fd);
 }
 

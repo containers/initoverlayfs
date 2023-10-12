@@ -3,6 +3,23 @@ static inline bool is_line_key(const str* line, const str* key) {
          !strncmp(line->c_str, key->c_str, key->len);
 }
 
+static inline int conf_construct(conf* c) {
+  c->bootfs.val = (str*)calloc(1, sizeof(str));
+  c->bootfs.scoped = (str*)calloc(1, sizeof(str));
+  c->bootfstype.val = (str*)calloc(1, sizeof(str));
+  c->bootfstype.scoped = (str*)calloc(1, sizeof(str));
+  c->fs.val = (str*)calloc(1, sizeof(str));
+  c->fs.scoped = (str*)calloc(1, sizeof(str));
+  c->fstype.val = (str*)calloc(1, sizeof(str));
+  c->fstype.scoped = (str*)calloc(1, sizeof(str));
+  c->udev_trigger.val = (str*)calloc(1, sizeof(str));
+  c->udev_trigger.scoped = (str*)calloc(1, sizeof(str));
+  return !c->bootfs.val || !c->bootfs.scoped || !c->bootfstype.val ||
+         !c->bootfstype.scoped || !c->fs.val || !c->fs.scoped ||
+         !c->fstype.val || !c->fstype.scoped || !c->udev_trigger.val ||
+         !c->udev_trigger.scoped;
+}
+
 static inline void set_conf(pair* conf, str** line, const size_t key_len) {
   int i;
   for (i = key_len; isspace((*line)->c_str[i]); ++i)
@@ -16,7 +33,7 @@ static inline void set_conf(pair* conf, str** line, const size_t key_len) {
   swap(conf->scoped, *line);
 }
 
-static inline void set_conf_pick(conf* c, str** line) {
+static inline void conf_set_pick(conf* c, str** line) {
   const str bootfs_str = {.c_str = "bootfs", .len = sizeof("bootfs") - 1};
   const str bootfstype_str = {.c_str = "bootfstype",
                               .len = sizeof("bootfstype") - 1};
@@ -37,7 +54,7 @@ static inline void set_conf_pick(conf* c, str** line) {
     set_conf(&c->udev_trigger, line, udev_trigger_str.len);
 }
 
-static inline void print_conf(conf* c) {
+static inline void conf_print(conf* c) {
   printd(
       "bootfs: {\"%s\", \"%s\"}, bootfstype: {\"%s\", \"%s\"}, fs: {\"%s\", "
       "\"%s\"}, fstype: {\"%s\", \"%s\"}, udev_trigger: {\"%s\", \"%s\"}\n",
@@ -47,7 +64,7 @@ static inline void print_conf(conf* c) {
       c->udev_trigger.scoped->c_str);
 }
 
-static inline char* read_conf(const char* file, conf* c) {
+static inline char* conf_read(conf* c, const char* file) {
   autofclose FILE* f = fopen(file, "r");
   autofree_str str* line = (str*)malloc(sizeof(str));
   if (!line)
@@ -60,9 +77,9 @@ static inline char* read_conf(const char* file, conf* c) {
 
   for (size_t len_alloc;
        (line->len = getline(&line->c_str, &len_alloc, f)) != -1;)
-    set_conf_pick(c, &line);
+    conf_set_pick(c, &line);
 
-  print_conf(c);
+  conf_print(c);
 
   return NULL;
 }

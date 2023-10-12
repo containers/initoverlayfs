@@ -256,8 +256,6 @@ static inline int recursiveRemove(const int fd) {
 done:
   if (dir)
     closedir(dir);
-  else
-    close(fd);
 
   return rc;
 }
@@ -301,14 +299,11 @@ static inline int switchroot_move(const char* newroot) {
     case 0: /* child */
     {
       struct statfs stfs;
-
       if (fstatfs(cfd, &stfs) == 0 &&
-          (stfs.f_type == RAMFS_MAGIC || stfs.f_type == TMPFS_MAGIC))
+          (stfs.f_type == RAMFS_MAGIC || stfs.f_type == TMPFS_MAGIC)) {
         recursiveRemove(cfd);
-      else {
+      } else
         print("old root filesystem is not an initramfs");
-        close(cfd);
-      }
 
       exit(EXIT_SUCCESS);
     }
@@ -579,30 +574,16 @@ int main(void) {
                              .fs = {0, 0},
                              .fstype = {0, 0},
                              .udev_trigger = {0, 0}};
-
-  conf.bootfs.val = (str*)calloc(1, sizeof(str));
-  conf.bootfs.scoped = (str*)calloc(1, sizeof(str));
-  conf.bootfstype.val = (str*)calloc(1, sizeof(str));
-  conf.bootfstype.scoped = (str*)calloc(1, sizeof(str));
-  conf.fs.val = (str*)calloc(1, sizeof(str));
-  conf.fs.scoped = (str*)calloc(1, sizeof(str));
-  conf.fstype.val = (str*)calloc(1, sizeof(str));
-  conf.fstype.scoped = (str*)calloc(1, sizeof(str));
-  conf.udev_trigger.val = (str*)calloc(1, sizeof(str));
-  conf.udev_trigger.scoped = (str*)calloc(1, sizeof(str));
-  if (!conf.bootfs.val || !conf.bootfs.scoped || !conf.bootfstype.val ||
-      !conf.bootfstype.scoped || !conf.fs.val || !conf.fs.scoped ||
-      !conf.fstype.val || !conf.fstype.scoped || !conf.udev_trigger.val ||
-      !conf.udev_trigger.scoped)
+  if (conf_construct(&conf))
     return 0;
 
-  read_conf("/etc/initoverlayfs.conf", &conf);
+  conf_read(&conf, "/etc/initoverlayfs.conf");
   autofree char** udev_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
   waitpid(pid, 0, 0);
   const pid_t udev_trigger_pid = udev_trigger(udev_argv);
   convert_bootfs(&conf);
   convert_fs(&conf);
-  print_conf(&conf);
+  conf_print(&conf);
   fork_execl_no_wait(pid, "/usr/sbin/modprobe", "loop");
   waitpid(udev_trigger_pid, 0, 0);
   waitpid(pid, 0, 0);
