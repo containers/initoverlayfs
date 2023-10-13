@@ -549,8 +549,8 @@ static inline char** cmd_to_argv(char* cmd) {
     return argv;
 
   size_t i = 0;
-  for (char* token = strtok(cmd, " \f\n\r\t\v"); token;
-       token = strtok(NULL, " \f\n\r\t\v")) {
+  static const char* delim = " \f\n\r\t\v";
+  for (char* token = strtok(cmd, delim); token; token = strtok(NULL, delim)) {
     if (i >= size) {
       size = double_array(&argv, size);
       if (!size)
