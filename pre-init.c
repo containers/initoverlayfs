@@ -374,8 +374,8 @@ static inline int switchroot(const char* newroot) {
     printd("mount(\"%s\", \"%s\", NULL, MS_MOVE, NULL)\n", umounts[i],
            newmount);
     if (mount(umounts[i], newmount, NULL, MS_MOVE, NULL) < 0) {
-      print("failed to mount moving %s to %s", umounts[i], newmount);
-      print("forcing unmount of %s", umounts[i]);
+      print("failed to mount moving %s to %s, forcing unmount\n", umounts[i],
+            newmount);
       umount2(umounts[i], MNT_FORCE);
     }
   }
