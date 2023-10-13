@@ -531,9 +531,8 @@ static inline void mounts(const conf* c) {
 static inline size_t double_array(char*** ptr, size_t size) {
   size *= 2;
   char** tmp_ptr = (char**)realloc(*ptr, size * sizeof(char*));
-  if (!tmp_ptr) {
+  if (!tmp_ptr)
     return 0;
-  }
 
   *ptr = tmp_ptr;
   return size;
