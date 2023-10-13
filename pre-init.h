@@ -41,6 +41,7 @@
   } while (0)
 
 #if 1
+#define DEBUG
 #define printd(...)     \
   do {                  \
     print(__VA_ARGS__); \

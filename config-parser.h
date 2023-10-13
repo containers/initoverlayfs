@@ -54,7 +54,8 @@ static inline void conf_set_pick(conf* c, str** line) {
     set_conf(&c->udev_trigger, line, udev_trigger_str.len);
 }
 
-static inline void conf_print(conf* c) {
+static inline conf* conf_print(conf* c) {
+#ifdef DEBUG
   printd(
       "bootfs: {\"%s\", \"%s\"}, bootfstype: {\"%s\", \"%s\"}, fs: {\"%s\", "
       "\"%s\"}, fstype: {\"%s\", \"%s\"}, udev_trigger: {\"%s\", \"%s\"}\n",
@@ -62,6 +63,8 @@ static inline void conf_print(conf* c) {
       c->bootfstype.scoped->c_str, c->fs.val->c_str, c->fs.scoped->c_str,
       c->fstype.val->c_str, c->fstype.scoped->c_str, c->udev_trigger.val->c_str,
       c->udev_trigger.scoped->c_str);
+#endif
+  return c;
 }
 
 static inline char* conf_read(conf* c, const char* file) {
