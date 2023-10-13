@@ -3,6 +3,7 @@
 #endif
 
 #include <ctype.h>
+#include <dirent.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -16,6 +17,7 @@
 #define autofree_conf __attribute__((cleanup(cleanup_free_conf)))
 #define autoclose __attribute__((cleanup(cleanup_close)))
 #define autofclose __attribute__((cleanup(cleanup_fclose)))
+#define autoclosedir __attribute__((cleanup(cleanup_closedir)))
 
 #ifdef __cplusplus
 #define typeof decltype
@@ -111,4 +113,9 @@ static inline void cleanup_close(const int* fd) {
 static inline void cleanup_fclose(FILE** stream) {
   if (*stream)
     fclose(*stream);
+}
+
+static inline void cleanup_closedir(DIR** dir) {
+  if (*dir)
+    closedir(*dir);
 }

@@ -188,77 +188,85 @@ static inline int losetup(char** loopdev, const char* file) {
   return 0;
 }
 
-/* remove all files/directories below dirName -- don't cross mountpoints */
-static inline int recursiveRemove(const int fd) {
-  struct stat rb;
-  DIR* dir;
-  int rc = -1;
-  int dfd;
+static inline int recursive_rm(const int fd);
 
-  if (!(dir = fdopendir(fd))) {
-    print("failed to open directory\n");
-    goto done;
+static inline int if_directory(const int dfd,
+                               const struct dirent* d,
+                               const struct stat* rb,
+                               int* isdir) {
+  struct stat sb;
+  if (fstatat(dfd, d->d_name, &sb, AT_SYMLINK_NOFOLLOW)) {
+    print("stat of %s failed\n", d->d_name);
+    return 1;
   }
 
-  /* fdopendir() precludes us from continuing to use the input fd */
-  dfd = dirfd(dir);
+  /* skip if device is not the same */
+  if (sb.st_dev != rb->st_dev)
+    return 1;
+
+  /* remove subdirectories */
+  if (S_ISDIR(sb.st_mode)) {
+    autoclose const int cfd = openat(dfd, d->d_name, O_RDONLY);
+    if (cfd >= 0)
+      recursive_rm(cfd); /* it closes cfd too */
+
+    *isdir = 1;
+  }
+
+  return 0;
+}
+
+static inline int for_each_directory(DIR* dir,
+                                     const int dfd,
+                                     const struct stat* rb) {
+  errno = 0;
+  struct dirent* d = readdir(dir);
+  if (!d) {
+    if (errno) {
+      print("failed to read directory\n");
+      return -1;
+    }
+
+    return 0; /* end of directory */
+  }
+
+  if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, "..") ||
+      !strcmp(d->d_name, "initoverlayfs"))
+    return 1;
+
+  int isdir = 0;
+  if (d->d_type == DT_DIR || d->d_type == DT_UNKNOWN)
+    if (if_directory(dfd, d, rb, &isdir))
+      return 1;
+
+  if (unlinkat(dfd, d->d_name, isdir ? AT_REMOVEDIR : 0))
+    print("failed to unlink %s\n", d->d_name);
+
+  return 1;
+}
+
+/* remove all files/directories below dirName -- don't cross mountpoints */
+static inline int recursive_rm(const int fd) {
+  autoclosedir DIR* dir = fdopendir(fd);
+  if (!dir) {
+    print("failed to open directory\n");
+    return -1;
+  }
+
+  struct stat rb;
+  const int dfd = dirfd(dir);
   if (fstat(dfd, &rb)) {
     print("stat failed\n");
-    goto done;
+    return -1;
   }
 
   while (1) {
-    struct dirent* d;
-    int isdir = 0;
-
-    errno = 0;
-    if (!(d = readdir(dir))) {
-      if (errno) {
-        print("failed to read directory\n");
-        goto done;
-      }
-
-      break; /* end of directory */
-    }
-
-    if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, "..") ||
-        !strcmp(d->d_name, "initoverlayfs"))
-      continue;
-#ifdef _DIRENT_HAVE_D_TYPE
-    if (d->d_type == DT_DIR || d->d_type == DT_UNKNOWN)
-#endif
-    {
-      struct stat sb;
-
-      if (fstatat(dfd, d->d_name, &sb, AT_SYMLINK_NOFOLLOW)) {
-        print("stat of %s failed\n", d->d_name);
-        continue;
-      }
-
-      /* skip if device is not the same */
-      if (sb.st_dev != rb.st_dev)
-        continue;
-
-      /* remove subdirectories */
-      if (S_ISDIR(sb.st_mode)) {
-        autoclose const int cfd = openat(dfd, d->d_name, O_RDONLY);
-        if (cfd >= 0)
-          recursiveRemove(cfd); /* it closes cfd too */
-
-        isdir = 1;
-      }
-    }
-
-    if (unlinkat(dfd, d->d_name, isdir ? AT_REMOVEDIR : 0))
-      print("failed to unlink %s", d->d_name);
+    const int ret = for_each_directory(dir, dfd, &rb);
+    if (ret <= 0)
+      return ret;
   }
 
-  rc = 0; /* success */
-done:
-  if (dir)
-    closedir(dir);
-
-  return rc;
+  return 0;
 }
 
 static inline int move_chroot_chdir(const char* newroot) {
@@ -302,7 +310,7 @@ static inline int switchroot_move(const char* newroot) {
       struct statfs stfs;
       if (fstatfs(cfd, &stfs) == 0 &&
           (stfs.f_type == RAMFS_MAGIC || stfs.f_type == TMPFS_MAGIC)) {
-        recursiveRemove(cfd);
+        recursive_rm(cfd);
       } else
         print("old root filesystem is not an initramfs");
 
@@ -540,27 +548,20 @@ static inline char** cmd_to_argv(char* cmd) {
   if (!argv)
     return argv;
 
-  int i = 0;
-  size_t j = 0;
-  for (; cmd[i]; ++j) {
-    while (isspace(cmd[i]))
-      ++i;
-
-    if (j >= size) {
+  size_t i = 0;
+  for (char* token = strtok(cmd, " \f\n\r\t\v"); token;
+       token = strtok(NULL, " \f\n\r\t\v")) {
+    if (i >= size) {
       size = double_array(&argv, size);
       if (!size)
         return argv;
     }
 
-    argv[j] = cmd + i;
-    while (!isspace(cmd[i]))
-      ++i;
-
-    cmd[i] = 0;
+    argv[i] = token;
     ++i;
   }
 
-  argv[j] = 0;
+  argv[i] = 0;
   return argv;
 }
 
