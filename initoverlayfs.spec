@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.91
+Version:       0.92
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -33,6 +33,8 @@ install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %changelog
+* Fri Oct 13 2023 Eric Curtin <ecurtin@redhat.com> - 0.92-1
+- Add default fs and fstype.
 * Fri Oct 13 2023 Eric Curtin <ecurtin@redhat.com> - 0.91-1
 - Rm custom tokenizer, replace with strtok.
 * Thu Oct 12 2023 Eric Curtin <ecurtin@redhat.com> - 0.9-1

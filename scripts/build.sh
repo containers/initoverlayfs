@@ -123,7 +123,7 @@ sudo clang -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token pre
 sudo gcc -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token -fanalyzer pre-init.c -o /usr/sbin/pre-init
 #sudo dracut $decompressor_dracut -v -m "kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
 boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
-sudo /bin/bash -c "echo -e \"bootfs $boot_partition\nbootfstype ext4\nfs /initoverlayfs-$release.img\nfstype erofs\n\" > /etc/initoverlayfs.conf"
+sudo /bin/bash -c "echo -e \"bootfs $boot_partition\nbootfstype ext4\n\" > /etc/initoverlayfs.conf"
 sudo dracut $decompressor_dracut -v -f --strip -M
 sudo du -sh /boot/initramfs*
 sudo lsinitrd | grep "pre-init"

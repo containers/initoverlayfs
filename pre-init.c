@@ -13,6 +13,7 @@
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/utsname.h>
 #include <sys/vfs.h>
 #include <sys/wait.h>
 #include "config-parser.h"
@@ -463,24 +464,35 @@ static inline int convert_bootfs(conf* c) {
 }
 
 static inline int convert_fs(conf* c) {
+  if (!c->fstype.scoped->c_str) {
+    c->fstype.scoped->c_str = strdup("erofs");
+    c->fstype.val->c_str = c->fstype.scoped->c_str;
+  }
+
+  autofree char* fs = 0;
+  if (!c->fs.scoped->c_str) {
+    struct utsname buf;
+    uname(&buf);
+    if (asprintf(&fs, "/boot/initoverlayfs-%s.img", buf.release) < 0)
+      return -1;
+
+    swap(fs, c->fs.scoped->c_str);
+    c->fs.val->c_str = c->fs.scoped->c_str;
+    return 0;
+  }
+
   if (!c->fs.val->c_str) {
     print("c->fs.val->c_str pointer is null\n");
-    return -5;
+    return -2;
   }
 
   if (!c->fs.val->c_str[0]) {
     print("c->fs.val->c_str string is \"\"\n");
-    return -4;
+    return -3;
   }
 
-  autofree char* fs = (char*)malloc(sizeof("/boot") + c->fs.scoped->len);
-  if (!fs)
-    return -1;  // fatal error, something is drastically wrong if realloc fails
-
-  strcpy(fs, "/boot");
-  strcpy(fs + sizeof("/boot") - 1, c->fs.val->c_str);
-
-  printd("strcpy(\"%s\", \"/boot\")\n", fs ? fs : "(nil)");
+  if (asprintf(&fs, "/boot%s", c->fs.val->c_str) < 0)
+    return -4;
 
   swap(fs, c->fs.scoped->c_str);
   c->fs.val->c_str = c->fs.scoped->c_str;
@@ -582,10 +594,9 @@ int main(void) {
   autofree char** udev_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
   waitpid(pid, 0, 0);
   const pid_t udev_trigger_pid = udev_trigger(udev_argv);
+  fork_execl_no_wait(pid, "/usr/sbin/modprobe", "loop");
   convert_bootfs(&conf);
   convert_fs(&conf);
-  conf_print(&conf);
-  fork_execl_no_wait(pid, "/usr/sbin/modprobe", "loop");
   waitpid(udev_trigger_pid, 0, 0);
   waitpid(pid, 0, 0);
   fork_execlp("udevadm", "wait", conf.bootfs.val->c_str);
