@@ -98,8 +98,8 @@
     exit(errno);                                      \
   } while (0)
 
-static inline void exec_absolute_path(const char* exe) {
-  printd("exec_absolute_path(\"%s\")\n", exe);
+static inline void execlp_single_arg(const char* exe) {
+  printd("execlp_single_arg(\"%s\")\n", exe);
   execl(exe, exe, (char*)NULL);
   exit(errno);
 }
@@ -608,10 +608,10 @@ int main(void) {
     return 0;
   }
 
-  exec_absolute_path("/sbin/init");
-  exec_absolute_path("/etc/init");
-  exec_absolute_path("/bin/init");
-  exec_absolute_path("/bin/sh");
+  execlp_single_arg("/sbin/init");
+  execlp_single_arg("/etc/init");
+  execlp_single_arg("/bin/init");
+  execlp_single_arg("/bin/sh");
 
   return 0;
 }
