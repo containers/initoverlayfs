@@ -102,10 +102,9 @@
     exit(errno);                                      \
   } while (0)
 
-static inline void execlp_single_arg(const char* exe) {
-  printd("execlp_single_arg(\"%s\")\n", exe);
+static inline void execl_single_arg(const char* exe) {
+  printd("execl_single_arg(\"%s\")\n", exe);
   execl(exe, exe, (char*)NULL);
-  exit(errno);
 }
 
 static inline FILE* log_open_kmsg(void) {
@@ -613,10 +612,10 @@ int main(void) {
     return 0;
   }
 
-  execlp_single_arg("/sbin/init");
-  execlp_single_arg("/etc/init");
-  execlp_single_arg("/bin/init");
-  execlp_single_arg("/bin/sh");
+  execl_single_arg("/sbin/init");
+  execl_single_arg("/etc/init");
+  execl_single_arg("/bin/init");
+  execl_single_arg("/bin/sh");
 
   return 0;
 }
