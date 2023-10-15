@@ -1,7 +1,3 @@
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <ctype.h>
 #include <dirent.h>
 #include <stdarg.h>
@@ -30,14 +26,14 @@
     b = temp;           \
   } while (0)
 
-#define print(...)                               \
-  do {                                           \
-    if (kmsg_f) {                                \
-      fprintf(kmsg_f, "pre-init: " __VA_ARGS__); \
-      break;                                     \
-    }                                            \
-                                                 \
-    printf(__VA_ARGS__);                         \
+#define print(...)                                   \
+  do {                                               \
+    if (kmsg_f) {                                    \
+      fprintf(kmsg_f, "storage-init: " __VA_ARGS__); \
+      break;                                         \
+    }                                                \
+                                                     \
+    printf(__VA_ARGS__);                             \
   } while (0)
 
 #if 1

@@ -1,4 +1,8 @@
-#include "pre-init.h"
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include "storage-init.h"
 #include <assert.h>
 #include <dirent.h>
 #include <err.h>
@@ -580,8 +584,10 @@ int main(void) {
   mount_proc_sys_dev();
   autofclose FILE* kmsg_f_scoped = log_open_kmsg();
   kmsg_f = kmsg_f_scoped;
-  pid_t pid;
-  fork_execl_no_wait(pid, "/lib/systemd/systemd-udevd", "--daemon");
+  pid_t udevd_pid;
+  fork_execl_no_wait(udevd_pid, "/lib/systemd/systemd-udevd", "--daemon");
+  pid_t loop_pid;
+  fork_execl_no_wait(loop_pid, "/usr/sbin/modprobe", "loop");
   autofree_conf conf conf = {.bootfs = {0, 0},
                              .bootfstype = {0, 0},
                              .fs = {0, 0},
@@ -592,13 +598,12 @@ int main(void) {
 
   conf_read(&conf, "/etc/initoverlayfs.conf");
   autofree char** udev_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
-  waitpid(pid, 0, 0);
+  waitpid(udevd_pid, 0, 0);
   const pid_t udev_trigger_pid = udev_trigger(udev_argv);
-  fork_execl_no_wait(pid, "/usr/sbin/modprobe", "loop");
   convert_bootfs(&conf);
   convert_fs(&conf);
   waitpid(udev_trigger_pid, 0, 0);
-  waitpid(pid, 0, 0);
+  waitpid(loop_pid, 0, 0);
   fork_execlp("udevadm", "wait", conf.bootfs.val->c_str);
   errno = 0;
 

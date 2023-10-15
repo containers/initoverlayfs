@@ -20,16 +20,16 @@ Recommends: erofs-utils
 
 %build
 RPM_OPT_FLAGS="${RPM_OPT_FLAGS/-flto=auto /}"
-gcc ${RPM_OPT_FLAGS} pre-init.c -o pre-init
+gcc ${RPM_OPT_FLAGS} storage-init.c -o storage-init
 
 %install
 install -D -m744 bin/initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
-install -D -m744 pre-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/pre-init
+install -D -m744 storage-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/storage-init
 install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD_ROOT/%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %files
 %{_bindir}/initoverlayfs-install
-%{_prefix}/sbin/pre-init
+%{_prefix}/sbin/storage-init
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %changelog

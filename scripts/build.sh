@@ -84,10 +84,10 @@ set -ex
 
 cd ~/git/initoverlayfs
 if [ "$2" = "initramfs" ]; then
-  sudo clang -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token pre-init.c -o /usr/sbin/pre-init
-  sudo gcc -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token -fanalyzer pre-init.c -o /usr/sbin/pre-init
+  sudo clang -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token storage-init.c -o /usr/sbin/storage-init
+  sudo gcc -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token -fanalyzer storage-init.c -o /usr/sbin/storage-init
 
-  sudo cp -r lib/dracut/modules.d/81pre-initoverlayfs /usr/lib/dracut/modules.d/
+  sudo cp -r lib/dracut/modules.d/81storage-initoverlayfs /usr/lib/dracut/modules.d/
   sudo cp -r lib/dracut/modules.d/81kamoso /usr/lib/dracut/modules.d/
   du -sh /boot/initramfs*
   sudo dd if=/dev/urandom of=/usr/bin/random-file count=1 bs="$1"
@@ -100,14 +100,14 @@ fi
 UNLOCK_OVERLAYDIR="$DIR_TO_DUMP_INITRAMFS"
 extract_initrd_into_initoverlayfs
 sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
-# sudo valgrind /usr/sbin/pre-init
-# sudo ln -sf pre-init $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
-# sudo ln -sf usr/bin/pre-init $DIR_TO_DUMP_INITRAMFS/init
+# sudo valgrind /usr/sbin/storage-init
+# sudo ln -sf storage-init $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
+# sudo ln -sf usr/bin/storage-init $DIR_TO_DUMP_INITRAMFS/init
 if [ $fs == "erofs" ]; then
   sudo mkfs.$fs /boot/initoverlayfs-$release.img /run/initoverlayfs/
 fi
 #sudo losetup -fP /boot/initoverlayfs-$release.img
-# ln -s init /usr/sbin/pre-init
+# ln -s init /usr/sbin/storage-init
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
 sudo du -sh $initramfs
 #sudo dracut -v -f --strip $initramfs -M
@@ -119,14 +119,14 @@ sudo rm -rf /usr/lib/dracut/modules.d/*pre-initoverlayfs
 
 set -x
 
-sudo clang -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token pre-init.c -o /usr/sbin/pre-init
-sudo gcc -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token -fanalyzer pre-init.c -o /usr/sbin/pre-init
-#sudo dracut $decompressor_dracut -v -m "kernel-modules udev-rules pre-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
+sudo clang -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token storage-init.c -o /usr/sbin/storage-init
+sudo gcc -O3 -pedantic -Wall -Wextra -Werror -Wno-language-extension-token -fanalyzer storage-init.c -o /usr/sbin/storage-init
+#sudo dracut $decompressor_dracut -v -m "kernel-modules udev-rules storage-initramfs" -f --strip -M -o "nss-softokn bash i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib shutdown systemd systemd-initrd" # systemd-initrd (req by systemd)
 boot_partition=$(mount | grep "on /boot type" | awk '{print $1}')
 sudo /bin/bash -c "echo -e \"bootfs $boot_partition\nbootfstype ext4\n\" > /etc/initoverlayfs.conf"
 sudo dracut $decompressor_dracut -v -f --strip -M
 sudo du -sh /boot/initramfs*
-sudo lsinitrd | grep "pre-init"
+sudo lsinitrd | grep "storage-init"
 sudo du -sh $initramfs
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
@@ -135,8 +135,8 @@ bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)
 #uuid=$(grep "boot.*ext4" /etc/fstab | awk '{print $1}' | sed s/UUID=//g)
 #sudo sed -i '/boot.*ext4/d' /etc/fstab
 sudo systemctl daemon-reload
-#sudo sed -i "s#options #options initoverlayfs=UUID=$uuid initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
-#sudo sed -i "s#options #options initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/pre-init #g" /boot/loader/entries/$bls_file
+#sudo sed -i "s#options #options initoverlayfs=UUID=$uuid initoverlayfstype=ext4 rdinit=/usr/sbin/storage-init #g" /boot/loader/entries/$bls_file
+#sudo sed -i "s#options #options initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/storage-init #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
 
