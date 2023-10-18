@@ -26,6 +26,9 @@ extract_initrd_into_initoverlayfs() {
     rm -f /boot/initoverlayfs-$kver.img
     mkfs.erofs /boot/initoverlayfs-$kver.img "$DIR_TO_DUMP_INITRAMFS"
   else
+    echo "Please install mkfs.erofs"
+    exit 0
+
     fstype="ext4"
     dd if=/dev/zero of=/boot/initoverlayfs-$kver.img bs=64M count=1
     dev=$(losetup -fP --show /boot/initoverlayfs-$kver.img)

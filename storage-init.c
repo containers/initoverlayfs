@@ -443,27 +443,28 @@ static inline int convert_bootfs(conf* c) {
 
   const char* token = strtok(c->bootfs.val->c_str, "=");
   autofree char* bootfs_tmp = 0;
-  if (!strcmp(token, "LABEL")) {
+  if (!strcmp(token, "PARTLABEL")) {
+    token = strtok(NULL, "=");
+    if (asprintf(&bootfs_tmp, "/dev/disk/by-partlabel/%s", token) < 0)
+      return -1;
+  } else if (!strcmp(token, "LABEL")) {
     token = strtok(NULL, "=");
     if (asprintf(&bootfs_tmp, "/dev/disk/by-label/%s", token) < 0)
       return -1;
-
-    swap(c->bootfs.scoped->c_str, bootfs_tmp);
-    c->bootfs.val->c_str = c->bootfs.scoped->c_str;
-    return 0;
   } else if (!strcmp(token, "UUID")) {
     token = strtok(NULL, "=");
     if (asprintf(&bootfs_tmp, "/dev/disk/by-uuid/%s", token) < 0)
       return -2;
+  } else if (!strcmp(token, "PARTUUID")) {
+    token = strtok(NULL, "=");
+    if (asprintf(&bootfs_tmp, "/dev/disk/by-partuuid/%s", token) < 0)
+      return -2;
+  } else
+    return -3;
 
-    swap(c->bootfs.scoped->c_str, bootfs_tmp);
-    c->bootfs.val->c_str = c->bootfs.scoped->c_str;
-    return 0;
-  }
-
-  printd("convert_bootfs(%p)\n", (void*)c);
-
-  return -3;
+  swap(c->bootfs.scoped->c_str, bootfs_tmp);
+  c->bootfs.val->c_str = c->bootfs.scoped->c_str;
+  return 0;
 }
 
 static inline int convert_fs(conf* c) {
