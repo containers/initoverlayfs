@@ -66,14 +66,22 @@ if [ -z "$kver" ]; then
   kver="$(uname -r)"
 fi
 
-extract_initrd_into_initoverlayfs
 initoverlayfs_conf="/etc/initoverlayfs.conf"
-boot_partition=$(cat /etc/fstab | grep "/boot.*ext4" | awk '{print $1}')
-echo -e "bootfs $boot_partition\nbootfstype ext4\n" > $initoverlayfs_conf
+if ! [ -e "$initoverlayfs_conf" ]; then
+  boot_partition=$(cat /etc/fstab | grep "/boot.*ext4" | awk '{print $1}')
+  echo -e "bootfs $boot_partition\nbootfstype ext4\ninitoverlayfs_builder dracut -N -f -v -M --reproducible\ninitrd_builder dracut -N -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softok\"\nudev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme\n" > $initoverlayfs_conf
+fi
+
 no_kern=""
 if ! compgen -G /boot/vmlinu* > /dev/null; then
   no_kern="--no-kernel"
 fi
 
-dracut --kver "$kver" -f $no_kern -M -m "kernel-modules udev-rules initoverlayfs" -o "bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn"
+initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$initoverlayfs_conf")
+/bin/bash -c "$initoverlayfs_builder"
+
+extract_initrd_into_initoverlayfs
+
+initrd_builder=$(sed -ne "s/^initrd_builder\s//pg" "$initoverlayfs_conf")
+/bin/bash -c "$initrd_builder"
 
