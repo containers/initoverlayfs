@@ -1,0 +1,27 @@
+name: pre-commit-checks
+
+on:
+  pull_request
+
+jobs:
+  pre_commit:
+    name: Check code with precommit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup environment
+        run: |
+          pip install pre-commit
+          pre-commit install
+
+      - name: Run precommit check
+        run: |
+          pre-commit run --file bin/* --files lib/dracut/modules.d/81initoverlayfs/* --files scripts/*
