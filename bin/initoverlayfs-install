@@ -112,6 +112,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# This logic for the case where there is no kernel present
+# in this directory, some microVMs and containers.
+#
+# no_kern=""
+# if ! compgen -G /boot/vmlinu* > /dev/null; then
+#  no_kern="--no-kernel"
+# fi
+
 if [ -z "$kver" ]; then
   kver="$(uname -r)"
 fi
