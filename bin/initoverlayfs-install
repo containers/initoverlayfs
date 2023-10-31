@@ -1,50 +1,100 @@
 #!/bin/bash
 
-set -ex
+set -e
 
-extract_initrd_into_initoverlayfs() {
-  DIR_TO_DUMP_INITRAMFS="/var/tmp/initoverlayfs"
-  mkdir -p "$DIR_TO_DUMP_INITRAMFS"
+# Constants with default value
+DECOMPRESSOR="lz4cat"
+DECOMPRESSOR_DRACUT="--lz4"
 
-  file_type=$(file /boot/initramfs-$kver.img)
-  decompressor="lz4cat"
-  decompressor_dracut="--lz4"
-  if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
-    decompressor_dracut=""
-    decompressor="zcat"
-  elif [[ "$file_type" == *"regular file, no read permission"* ]] || \
-       [[ "$file_type" == *"gzip"* ]]; then
-    decompressor_dracut=""
-    decompressor="zcat"
-  fi
+INITOVERLAYFS_CONF="/etc/initoverlayfs.conf"
+INITRAMFS_DUMP_DIR="/var/tmp/initoverlayfs"
 
-  if command -v mkfs.erofs; then
-    fstype="erofs"
-    cd "$DIR_TO_DUMP_INITRAMFS"
-    /usr/lib/dracut/skipcpio /boot/initramfs-$kver.img | $decompressor | cpio -ivd
-    cd -
-    rm -f /boot/initoverlayfs-$kver.img
-    mkfs.erofs /boot/initoverlayfs-$kver.img "$DIR_TO_DUMP_INITRAMFS"
-  else
-    echo "Please install mkfs.erofs"
-    exit 0
+# Only erofs-based initoverlayfs supported, ext4, btrfs, xfs, etc. to be implemented"
+SUPPORTED_FILESYSTEM=("erofs")
+SKIPCPIO_BIN="/usr/lib/dracut/skipcpio"
 
-    fstype="ext4"
-    dd if=/dev/zero of=/boot/initoverlayfs-$kver.img bs=64M count=1
-    dev=$(losetup -fP --show /boot/initoverlayfs-$kver.img)
-    mkfs.$fstype $dev
-    mount $dev "$DIR_TO_DUMP_INITRAMFS"
-    cd "$DIR_TO_DUMP_INITRAMFS"
-    /usr/lib/dracut/skipcpio /boot/initramfs-$kver.img | zstd -d --stdout | cpio -ivd
-    sync
-    cd -
-    while ! umount "$DIR_TO_DUMP_INITRAMFS"; do
+exec_erofs() {
+    pushd "${INITRAMFS_DUMP_DIR}" || exit
+        "${SKIPCPIO_BIN}" /boot/initramfs-"${kver}".img | "${DECOMPRESSOR}" | cpio -ivd
+    popd || exit
+    rm -f /boot/initoverlayfs-"${kver}".img
+    mkfs.erofs /boot/initoverlayfs-"${kver}".img ${INITRAMFS_DUMP_DIR}
+}
+
+# Support for ext4 is currently under development.
+exec_ext4() {
+    dd if=/dev/zero of=/boot/initoverlayfs-"${kver}".img bs=64M count=1
+    dev=$(losetup -fP --show /boot/initoverlayfs-"${kver}".img)
+    mkfs.ext4 "${dev}"
+    mount "${dev}" "${INITRAMFS_DUMP_DIR}"
+
+    pushd "${INITRAMFS_DUMP_DIR}" || exit
+        "${SKIPCPIO_BIN}" /boot/initramfs-"${kver}".img | zstd -d --stdout | cpio -ivd
+        sync
+    popd || exit
+
+    while ! umount "${INITRAMFS_DUMP_DIR}"; do
       sleep 1
     done
 
-    losetup -d $dev
-  fi
+    losetup -d "${dev}"
 }
+
+detect_initramfs() {
+    if [ ! -d "${INITRAMFS_DUMP_DIR}" ]; then
+        mkdir -p "${INITRAMFS_DUMP_DIR}"
+    fi
+
+    echo "Extracting initrd into initoverlayfs..."
+
+    file_type=$(file /boot/initramfs-"${kver}".img)
+    case "${file_type}" in
+        *"ASCII cpio archive (SVR4 with no CRC)"*)
+            DECOMPRESSOR_DRACUT=""
+            DECOMPRESSOR="zcat"
+            ;;
+        *"regular file, no read permission"*|"gzip"*)
+            DECOMPRESSOR_DRACUT=""
+            DECOMPRESSOR="zcat"
+            ;;
+    esac
+
+    # Set delimiter for splitting the string
+    IFS=":"
+    read -r file_path file_desc <<< "${file_type}"
+    echo "  - File path: ${file_path}"
+    echo "  - File Description: ${file_desc}"
+    echo "  - Decompressor: ${DECOMPRESSOR}"
+    echo "  - Decompressor Dracut: ${DECOMPRESSOR_DRACUT}"
+}
+
+extract_initrd_into_initoverlayfs() {
+    if command -v mkfs.erofs; then
+        fstype="erofs"
+    elif command -v mkfs.ext4; then
+	fstype="ext4"
+    else
+	fstype="unsupported"
+    fi
+
+    case "${fstype}" in
+        # Support for ext4 is currently under development.
+        # *ext4*)
+        #    exec_ext4
+        #    ;;
+        *erofs*)
+	    exec_erofs
+            ;;
+        *)
+            echo -e "The detected filesytem: is ${fstype}." \
+		    "Unfortunately it's not supported at moment."
+	    echo -e "Supported filesystems: ${SUPPORTED_FILESYSTEM[*]}"
+	    exit 1
+            ;;
+    esac
+}
+
+# main()
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -52,7 +102,7 @@ while [[ $# -gt 0 ]]; do
       kver="$2"
       shift 2
       ;;
-    -*|--*)
+    -*)
       echo "Unknown option $1"
       exit 1
       ;;
@@ -66,22 +116,17 @@ if [ -z "$kver" ]; then
   kver="$(uname -r)"
 fi
 
-initoverlayfs_conf="/etc/initoverlayfs.conf"
-if ! [ -e "$initoverlayfs_conf" ]; then
-  boot_partition=$(cat /etc/fstab | grep "/boot.*ext4" | awk '{print $1}')
-  echo -e "bootfs $boot_partition\nbootfstype ext4\ninitoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"\ninitrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"\nudev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme\n" > $initoverlayfs_conf
+if ! [ -e "$INITOVERLAYFS_CONF" ]; then
+  boot_partition=$(< /etc/fstab grep "/boot.*ext4" | awk '{print $1}')
+  echo -e "bootfs $boot_partition\nbootfstype ext4\ninitoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"\ninitrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"\nudev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme\n" > $INITOVERLAYFS_CONF
 fi
 
-no_kern=""
-if ! compgen -G /boot/vmlinu* > /dev/null; then
-  no_kern="--no-kernel"
-fi
-
-initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$initoverlayfs_conf")
+initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$INITOVERLAYFS_CONF")
 /bin/bash -c "$initoverlayfs_builder"
 
+detect_initramfs
 extract_initrd_into_initoverlayfs
 
-initrd_builder=$(sed -ne "s/^initrd_builder\s//pg" "$initoverlayfs_conf")
+initrd_builder=$(sed -ne "s/^initrd_builder\s//pg" "$INITOVERLAYFS_CONF")
 /bin/bash -c "$initrd_builder"
 
