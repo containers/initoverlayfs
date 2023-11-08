@@ -1,14 +1,15 @@
 Name:          initoverlayfs
 Version:       0.96
-Release:       1%{?dist}
+Release:       2%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
-License:       GPLv2
-URL:           https://github.com/ericcurtin/initoverlayfs
+License:       GPL-2.0-only
+URL:           https://github.com/containers/initoverlayfs
 Source0:       %{url}/archive/%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires: gcc
 Recommends: erofs-utils
+Requires: dracut
 
 %global debug_package %{nil}
 
@@ -23,16 +24,22 @@ RPM_OPT_FLAGS="${RPM_OPT_FLAGS/-flto=auto /}"
 gcc ${RPM_OPT_FLAGS} storage-init.c -o storage-init
 
 %install
-install -D -m744 bin/initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
-install -D -m744 storage-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/storage-init
-install -D -m644 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD_ROOT/%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
+install -D -m755 bin/initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
+install -D -m755 storage-init ${RPM_BUILD_ROOT}/%{_prefix}/sbin/storage-init
+install -D -m755 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD_ROOT/%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 
 %files
+%license LICENSE
+%doc README.md
+%attr(0755,root,root) 
 %{_bindir}/initoverlayfs-install
 %{_prefix}/sbin/storage-init
-%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
+%{_prefix}/lib/dracut/modules.d/81initoverlayfs/
 
 %changelog
+* Wed Nov  8 2023 Stephen Smoogen <ssmoogen@redhat.com> - 0.96-2
+- Make changes to pass fedora-review tests on permissions and other items
+
 * Tue Oct 24 2023 Eric Curtin <ecurtin@redhat.com> - 0.96-1
 - Leave initoverlayfs dracut module out of initoverlayfs.
 * Tue Oct 24 2023 Eric Curtin <ecurtin@redhat.com> - 0.95-1
