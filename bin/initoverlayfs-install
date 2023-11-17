@@ -3,33 +3,32 @@
 set -e
 
 # Constants with default value
-DECOMPRESSOR="lz4cat"
-DECOMPRESSOR_DRACUT="--lz4"
+CAT="lz4cat"
 
 INITOVERLAYFS_CONF="/etc/initoverlayfs.conf"
-INITRAMFS_DUMP_DIR="/var/tmp/initoverlayfs"
+INITRAMFS_DUMP_DIR="/var/lib/initoverlayfs"
 
 # Only erofs-based initoverlayfs supported, ext4, btrfs, xfs, etc. to be implemented"
 SUPPORTED_FILESYSTEM=("erofs")
 SKIPCPIO_BIN="/usr/lib/dracut/skipcpio"
 
 exec_erofs() {
-    pushd "${INITRAMFS_DUMP_DIR}" || exit
-        "${SKIPCPIO_BIN}" /boot/initramfs-"${kver}".img | "${DECOMPRESSOR}" | cpio -ivd
-    popd || exit
-    rm -f /boot/initoverlayfs-"${kver}".img
-    mkfs.erofs /boot/initoverlayfs-"${kver}".img ${INITRAMFS_DUMP_DIR}
+    pushd "$INITRAMFS_DUMP_DIR"
+        "$SKIPCPIO_BIN" "/boot/initramfs-$kver.img" | "$CAT" | cpio -ivd
+    popd
+    rm -f "/boot/initoverlayfs-$kver.img"
+    mkfs.erofs "/boot/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
 }
 
 # Support for ext4 is currently under development.
 exec_ext4() {
-    dd if=/dev/zero of=/boot/initoverlayfs-"${kver}".img bs=64M count=1
-    dev=$(losetup -fP --show /boot/initoverlayfs-"${kver}".img)
+    dd if=/dev/zero of=/boot/initoverlayfs-"$kver".img bs=64M count=1
+    dev=$(losetup -fP --show /boot/initoverlayfs-"$kver".img)
     mkfs.ext4 "${dev}"
     mount "${dev}" "${INITRAMFS_DUMP_DIR}"
 
     pushd "${INITRAMFS_DUMP_DIR}" || exit
-        "${SKIPCPIO_BIN}" /boot/initramfs-"${kver}".img | zstd -d --stdout | cpio -ivd
+        "${SKIPCPIO_BIN}" /boot/initramfs-"$kver".img | zstd -d --stdout | cpio -ivd
         sync
     popd || exit
 
@@ -47,25 +46,38 @@ detect_initramfs() {
 
     echo "Extracting initrd into initoverlayfs..."
 
-    file_type=$(file /boot/initramfs-"${kver}".img)
-    case "${file_type}" in
-        *"ASCII cpio archive (SVR4 with no CRC)"*)
-            DECOMPRESSOR_DRACUT=""
-            DECOMPRESSOR="zcat"
+    file_path="/boot/initramfs-$kver.img"
+    bin="$($SKIPCPIO_BIN "$file_path" | { read -r -N 6 bin && echo "$bin"; })"
+    case $bin in
+        $'\x1f\x8b'*)
+            CAT="zcat"
             ;;
-        *"regular file, no read permission"*|"gzip"*)
-            DECOMPRESSOR_DRACUT=""
-            DECOMPRESSOR="zcat"
+        BZh*)
+            CAT="bzcat"
+            ;;
+        $'\x71\xc7'* | 070701)
+            CAT="cat"
+            ;;
+        $'\x02\x21'*)
+            CAT="lz4 -d -c"
+            ;;
+        $'\x89'LZO$'\0'*)
+            CAT="lzop -d -c"
+            ;;
+        $'\x28\xB5\x2F\xFD'*)
+            CAT="zstd -d -c"
+            ;;
+        *)
+            if echo "test" | xz | xzcat --single-stream > /dev/null 2>&1; then
+                CAT="xzcat --single-stream"
+            else
+                CAT="xzcat"
+            fi
             ;;
     esac
 
-    # Set delimiter for splitting the string
-    IFS=":"
-    read -r file_path file_desc <<< "${file_type}"
     echo "  - File path: ${file_path}"
-    echo "  - File Description: ${file_desc}"
-    echo "  - Decompressor: ${DECOMPRESSOR}"
-    echo "  - Decompressor Dracut: ${DECOMPRESSOR_DRACUT}"
+    echo "  - Decompressor: $CAT"
 }
 
 extract_initrd_into_initoverlayfs() {
@@ -92,6 +104,8 @@ extract_initrd_into_initoverlayfs() {
 	    exit 1
             ;;
     esac
+
+    rm -rf "$INITRAMFS_DUMP_DIR" &
 }
 
 # main()
@@ -126,7 +140,7 @@ fi
 
 if ! [ -e "$INITOVERLAYFS_CONF" ]; then
   boot_partition=$(< /etc/fstab grep "/boot.*ext4" | awk '{print $1}')
-  echo -e "bootfs $boot_partition\nbootfstype ext4\ninitoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"\ninitrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"\nudev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme\n" > $INITOVERLAYFS_CONF
+  echo -e "bootfs $boot_partition\nbootfstype ext4\ninitoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"\ninitrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"\nudev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme --subsystem-match=mmc --subsystem-match=mmc_host --subsystem-match=platform\n" > $INITOVERLAYFS_CONF
 fi
 
 initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$INITOVERLAYFS_CONF")
