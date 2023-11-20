@@ -504,6 +504,10 @@ static inline int convert_fs(conf* c) {
   return 0;
 }
 
+#define OVERLAY_STR                                                      \
+  "redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/upper,workdir=/" \
+  "overlay/work"
+
 static inline void mounts(const conf* c) {
   if (!c->bootfs.val->c_str) {
     print("bootfs empty\n");
@@ -528,12 +532,12 @@ static inline void mounts(const conf* c) {
         dev_loop, c->fstype.val->c_str, errno, strerror(errno));
 
   if (mount("overlay", "/initoverlayfs", "overlay", 0,
-            "redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/"
-            "upper,workdir=/overlay/work"))
+            "volatile," OVERLAY_STR) &&
+      errno == EINVAL &&
+      mount("overlay", "/initoverlayfs", "overlay", 0, OVERLAY_STR))
     print(
-        "mount(\"overlay\", \"/initoverlayfs\", \"overlay\", 0, "
-        "\"redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/"
-        "upper,workdir=/overlay/work\") %d (%s)\n",
+        "mount(\"overlay\", \"/initoverlayfs\", \"overlay\", 0, \"" OVERLAY_STR
+        "\") %d (%s)\n",
         errno, strerror(errno));
 
   if (mount("/boot", "/initoverlayfs/boot", c->bootfstype.val->c_str, MS_MOVE,
