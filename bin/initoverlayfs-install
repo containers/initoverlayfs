@@ -17,7 +17,7 @@ exec_erofs() {
         "$SKIPCPIO_BIN" "/boot/initramfs-$kver.img" | "$CAT" | cpio -ivd
     popd
     rm -f "/boot/initoverlayfs-$kver.img"
-    mkfs.erofs "/boot/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
+    mkfs.erofs "$erofs_compression" "/boot/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
 }
 
 # Support for ext4 is currently under development.
@@ -140,9 +140,30 @@ fi
 
 if ! [ -e "$INITOVERLAYFS_CONF" ]; then
   boot_partition=$(< /etc/fstab grep "/boot.*ext4" | awk '{print $1}')
-  echo -e "bootfs $boot_partition\nbootfstype ext4\ninitoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"\ninitrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"\nudev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme --subsystem-match=mmc --subsystem-match=mmc_host --subsystem-match=platform\n" > $INITOVERLAYFS_CONF
+  printf "%s\n%s\n%s\n%s\n%s\n" \
+         "bootfs $boot_partition" \
+         "bootfstype ext4" \
+         "initoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"" \
+         "initrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" \
+         "udev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme --subsystem-match=mmc --subsystem-match=mmc_host --subsystem-match=platform" > $INITOVERLAYFS_CONF
+
+  erofs_compression_supported="true"
+  . /etc/os-release
+  for i in $ID_LIKE; do
+    if [ "$i" == "rhel" ]; then
+      if [ "$VERSION_ID" -le 9 ]; then
+        erofs_compression_supported="false"
+        break
+      fi
+    fi
+  done
+
+  if $erofs_compression_supported; then
+    printf "%s\n" "erofs_compression -zlz4hc,11" >> $INITOVERLAYFS_CONF
+  fi
 fi
 
+erofs_compression=$(sed -ne "s/^erofs_compression\s//pg" "$INITOVERLAYFS_CONF")
 initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$INITOVERLAYFS_CONF")
 /bin/bash -c "$initoverlayfs_builder"
 
