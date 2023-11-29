@@ -1,0 +1,28 @@
+---
+# See the documentation for more information:
+# https://packit.dev/docs/configuration/
+
+upstream_project_url: https://github.com/containers/initoverlayfs
+issue_repository: https://github.com/containers/initoverlayfs
+specfile_path: initoverlayfs.spec
+upstream_package_name: initoverlayfs
+
+update_release: false
+
+srpm_build_deps:
+  - make
+
+jobs:
+  - job: copr_build
+    trigger: pull_request
+    # x86_64 is assumed by default
+    targets:
+      - fedora-39-x86_64
+      - centos-stream-9
+
+  - job: tests
+    trigger: pull_request
+    identifier: integration-tiers
+    tmt_plan: /integration/plans/tier-0 
+    targets:
+    - fedora-39-x86_64 
