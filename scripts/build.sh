@@ -28,7 +28,7 @@ fs="erofs"
 extract_initrd_into_initoverlayfs() {
   sudo mkdir -p "$DIR_TO_DUMP_INITRAMFS"
 
-  file_type=$(file /boot/initramfs-$release.img)
+  file_type=$(file /boot/initramfs-"$release".img)
   decompressor="lz4cat"
   decompressor_dracut="--lz4"
   if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
@@ -41,23 +41,23 @@ extract_initrd_into_initoverlayfs() {
 
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
-    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | $decompressor | sudo cpio -ivd
+    sudo /usr/lib/dracut/skipcpio /boot/initramfs-"$release".img | "$decompressor" | sudo cpio -ivd
     cd -
   else
     fs="ext4"
-    dd if=/dev/zero of=/boot/initoverlayfs-$release.img bs=64M count=1
-    dev=$(sudo losetup -fP --show /boot/initoverlayfs-$release.img)
-    sudo mkfs.$fs $dev
-    sudo mount $dev "$DIR_TO_DUMP_INITRAMFS"
+    dd if=/dev/zero of=/boot/initoverlayfs-"$release".img bs=64M count=1
+    dev=$(sudo losetup -fP --show /boot/initoverlayfs-"$release".img)
+    sudo mkfs."$fs" "$dev"
+    sudo mount "$dev" "$DIR_TO_DUMP_INITRAMFS"
     cd "$DIR_TO_DUMP_INITRAMFS"
-    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zstd -d --stdout | sudo cpio -ivd
+    sudo /usr/lib/dracut/skipcpio /boot/initramfs-"$release".img | zstd -d --stdout | sudo cpio -ivd
     sudo sync
     cd -
     while ! sudo umount "$DIR_TO_DUMP_INITRAMFS"; do
       sleep 1
     done
 
-    sudo losetup -d $dev
+    sudo losetup -d "$dev"
   fi
 }
 
@@ -70,13 +70,16 @@ cd
 if false; then
 cp mount-sysroot.service /usr/lib/systemd/system/
 mkdir -p /usr/lib/dracut/modules.d/00early-boot-service
-echo '#!/usr/bin/bash
+cat << 'EOF' > /usr/lib/dracut/modules.d/00early-boot-service/module-setup.sh
+#!/usr/bin/bash
 
 install() {
     inst_multiple -o \
       "$systemdsystemunitdir"/mount-sysroot.service \
       "$systemdsystemunitdir"/sysinit.target.wants/mount-sysroot.service
-}' > /usr/lib/dracut/modules.d/00early-boot-service/module-setup.sh
+}
+EOF
+
 sed -i "s/initrd-udevadm-cleanup-db.service/initrd-udevadm-cleanup-db.service mount-sysroot.service/g" /usr/lib/systemd/system/initrd-switch-root.target
 chcon system_u:object_r:systemd_unit_file_t:s0 /usr/lib/systemd/system/mount-sysroot.service
 cd /usr/lib/systemd/system/sysinit.target.wants/
@@ -111,12 +114,12 @@ sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 # sudo ln -sf storage-init $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
 # sudo ln -sf usr/bin/storage-init $DIR_TO_DUMP_INITRAMFS/init
 if [ $fs == "erofs" ]; then
-  sudo mkfs.$fs /boot/initoverlayfs-$release.img /run/initoverlayfs/
+  sudo mkfs."$fs" /boot/initoverlayfs-"$release".img /run/initoverlayfs/
 fi
-#sudo losetup -fP /boot/initoverlayfs-$release.img
+#sudo losetup -fP /boot/initoverlayfs-"$release".img
 # ln -s init /usr/sbin/storage-init
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
-sudo du -sh $initramfs
+sudo du -sh "$initramfs"
 #sudo dracut -v -f --strip $initramfs -M
 #sudo lsinitrd
 sudo du -sh /boot/initramfs*
@@ -134,7 +137,7 @@ sudo /bin/bash -c "echo -e \"bootfs $boot_partition\nbootfstype ext4\n\" > /etc/
 sudo dracut $decompressor_dracut -v -f --strip -M
 sudo du -sh /boot/initramfs*
 sudo lsinitrd | grep "storage-init"
-sudo du -sh $initramfs
+sudo du -sh "$initramfs"
 # sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
 
 bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)

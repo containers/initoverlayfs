@@ -149,6 +149,7 @@ if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CO
          "udev_trigger_generic udevadm trigger --type=devices --action=add" > $INITOVERLAYFS_CONF
 
   erofs_compression_supported="true"
+  # shellcheck disable=SC2034
   . /etc/os-release
   for i in $ID_LIKE; do
     if [ "$i" == "rhel" ]; then
