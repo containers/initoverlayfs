@@ -1,40 +1,62 @@
 # initoverlayfs
 
-**An innovative solution for generating initramfs images** focused in speed up Linux operating system boot time,  
-suitable for both **critical and non-critical** environments.
+A scalable solution for initial filesystems focused on minimal resource usage, suitable for both critical and non-critical environments.
 
-- [Why use initoverlayfs to generate initramfs images?](#why-use-initoverlayfs-to-generate-initramfs-images-)
+- [What is initoverlayfs?](#what-is-initoverlayfs)
+- [Why use initoverlayfs?](#why-use-initoverlayfs)
+- [Dependancies](#dependancies)
 - [Installation](#installation)
     * [Step 1 - Deploy the software](#step-1---deploy-the-software)
     * [Step 2 - Run initoverlayfs-install](#step-2---run-initoverlayfs-install)
     * [Step 3 - Reboot to test](#step-3---reboot-to-test)
     * [Step 4 - Validating the boot](#step-4---validating-the-boot)
 
-# Why use initoverlayfs to generate initramfs images?
+# What is initoverlayfs?
 
-An initramfs (Initial RAM File System) image is a fundamental component in preparing Linux systems during the boot process, preceding the initiation of the init process. 
+initoverlayfs is a solution that uses transient overlays for an initial filesystem rather than tmpfs. If compression is used, it relies on transparent decompression, rather than upfront decompression. This results in more scalable, maintainable initial filesystems.
 
-Typically, generating an initramfs involves assembling all available kernel modules and necessary files to boot and support any hardware using the specific Linux kernel version XYZ.  
+Here we see a traditional boot sequence:
+
+```
+fw -> bootloader -> kernel -> initramfs -> rootfs
+
+fw -> bootloader -> kernel -> init ------------->
+```
+
+Here is the boot sequence with initoverlayfs integrated, the mini-initramfs contains just enough to get storage drivers loaded and storage devices initialized. storage-init is a process that is not designed to replace init, it does just enough to initialize storage, switches to initoverlayfs as root and then executes init.
+
+```
+fw -> bootloader -> kernel -> mini-initramfs -> initoverlayfs -> rootfs
+
+fw -> bootloader -> kernel -> storage-init   -> init ----------------->
+```
+
+# Why use initoverlayfs?
+
+An initramfs (Initial RAM File System) image is a fundamental component in preparing Linux systems during the boot process, preceding the initiation of the init process.
+
+Typically, generating an initramfs involves assembling all available kernel modules and necessary files to boot and support any hardware using the specific Linux kernel version XYZ. This may also include some initialization that's not hardware specific, such as disk encryption, disk verification, early graphics, early camera input, ostree prepare root, etc.
 
 However, this conventional approach presents a significant challenge: loading such a voluminous image into memory during boot is time-consuming and can be problematic in critical scenarios where time to boot is critical. Edge devices commonly need to boot as quickly as possible such as healthcare, automotive and aviation.
 
-Conversely, the initoverlayfs approach proposes a solution: "**dividing the initramfs image into two parts**." 
+Conversely, the initoverlayfs approach proposes a solution: dividing the initramfs image into two parts, relying on transparent decompression rather than upfront decompression.
 
 This division entails segregating the initramfs image into two distinct components.
-The first component (initramfs) houses only the kernel modules and udev-rules necessary for storage, responsible for bringing up the storage device containing initoverlayfs quickly. Subsequently, it mounts and switches to the second component (initoverlayfs), containing all additional kernel modules and essential files required to support the Linux boot process.
 
-This innovative approach serves to diminish the size of the initramfs image, thus enhancing the speed of the boot process.
+The first component (initramfs) contains kernel modules, udev-rules and a storage intialization tool, responsible for bringing up the storage device containing initoverlayfs quickly. Subsequently, it mounts and switches to the second component (initoverlayfs), containing all additional kernel modules and essential files required to support the Linux boot process.
+
+This scalable approach serves to diminish the size of the initramfs image, thus enhancing the speed of the boot process.
 
 For illustration, consider a comparison of the sizes using dracut versus initoverlayfs:
 
-**Using Dracut**:
+**Using dracut only**:
 ``` bash
 # dracut -f
 # du -sh /boot/initramfs-6.5.5-300.fc39.x86_64.img
 36M	/boot/initramfs-6.5.5-300.fc39.x86_64.img
 ```
 
-**Using initoverlayfs**:
+**Using dracut + initoverlayfs**:
 ``` bash
 # /usr/bin/initoverlayfs-install
 # du -sh /boot/initramfs-6.5.5-300.fc39.x86_64.img
@@ -44,19 +66,32 @@ For illustration, consider a comparison of the sizes using dracut versus initove
 
 The advantages of adopting the initoverlayfs approach are evident in the substantial reduction in the size of the initramfs image, thereby significantly expediting the boot process, making it especially appealing in resource-constrained and time-sensitive scenarios.
 
+This is a graphic comparing the boot time effect of increasing initramfs size vs the effect of increasing initoverlayfs size, initoverlayfs is only effected by bytes you use:
+
+![initramfs-vs-initoverlayfs-scale](https://github.com/containers/initoverlayfs/assets/1694275/6f339016-7bcf-4129-af0e-a3f0be7c9be0)
+
+This is a graphic comparing the systemd start time using initramfs only vs using initramfs + initoverlayfs on Raspberry Pi 4 with SD card:
+
+![initramfs-vs-initoverlayfs](https://github.com/containers/initoverlayfs/assets/1694275/7381a100-9d5a-42ed-b55f-8d303b832a3e)
+
+# Dependancies
+
+- EROFS - Initoverlayfs uses erofs as the underlying filesystem.
+- dracut - As the initramfs and initoverlayfs composing tool.
+- systemd - As the init system.
+
+Note: none of the above dependancies are strictly needed, all the tools could be swapped out for other similar tools.
+
 # Installation
 
 ### Step 1 - Deploy the software
 
 Currently, RPM packages are available through the Copr Packages repository.
 
-- [CentOS Stream 9 - x86_64](https://download.copr.fedorainfracloud.org/results/%40centos-automotive-sig/next/centos-stream-9-x86_64/)
-- [Fedora 39 - x86_64](https://download.copr.fedorainfracloud.org/results/%40centos-automotive-sig/next/fedora-39-x86_64/)
-
 ``` bash
 dnf copr enable -y @centos-automotive-sig/next
 dnf install -y initoverlayfs
-Copr repo for next owned by @centos-automotive-sig             2.4 kB/s | 3.3 kB     00:01
+Copr repo for next owned by @centos-automotive-sig  2.4 kB/s | 3.3 kB   00:01
 Dependencies resolved.
 =============================================================================
  Package            Arch        Version           Repository            Size
