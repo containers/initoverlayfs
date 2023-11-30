@@ -81,6 +81,13 @@ Is this ok [y/N]: y
 initoverlayfs-0.96-1.fc39.x86_64
 ```
 
+**Note:**
+centos-stream-9 requires package from epel-release
+
+```
+dnf install -y  epel-release
+```
+
 ### Step 2 - Run initoverlayfs-install
 Once the deployment is completed, the next step is to execute the /usr/bin/initoverlayfs-install tool. This tool is responsible for generating both the initramfs and initoverlayfs images, along with the essential initoverlayfs.conf configuration.
 
