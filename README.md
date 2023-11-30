@@ -54,9 +54,9 @@ Currently, RPM packages are available through the Copr Packages repository.
 - [Fedora 39 - x86_64](https://download.copr.fedorainfracloud.org/results/%40centos-automotive-sig/next/fedora-39-x86_64/)
 
 ``` bash
-# dnf install https://download.copr.fedorainfracloud.org/results/%40centos-automotive-sig/next/fedora-39-x86_64/06561181-initoverlayfs/initoverlayfs-0.96-1.fc39.x86_64.rpm
-Last metadata expiration check: 2:29:27 ago on Tue 24 Oct 2023 08:54:21 AM EDT.
-initoverlayfs-0.96-1.fc39.x86_64.rpm          92 kB/s |  22 kB     00:00
+dnf copr enable -y @centos-automotive-sig/next fedora-39-$(arch)
+dnf install -y initoverlayfs
+Copr repo for next owned by @centos-automotive-sig             2.4 kB/s | 3.3 kB     00:01
 Dependencies resolved.
 =============================================================================
  Package            Arch        Version           Repository            Size
