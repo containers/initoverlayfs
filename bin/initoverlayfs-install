@@ -17,7 +17,7 @@ exec_erofs() {
         "$SKIPCPIO_BIN" "/boot/initramfs-$kver.img" | "$CAT" | cpio -ivd
     popd
     rm -f "/boot/initoverlayfs-$kver.img"
-    mkfs.erofs "$erofs_compression" "/boot/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
+    mkfs.erofs $erofs_compression "/boot/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
 }
 
 # Support for ext4 is currently under development.
@@ -138,14 +138,15 @@ if [ -z "$kver" ]; then
   kver="$(uname -r)"
 fi
 
-if ! [ -e "$INITOVERLAYFS_CONF" ]; then
+if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CONF"; then
   boot_partition=$(< /etc/fstab grep "/boot.*ext4" | awk '{print $1}')
-  printf "%s\n%s\n%s\n%s\n%s\n" \
+  printf "%s\n%s\n%s\n%s\n%s\n%s\n" \
          "bootfs $boot_partition" \
          "bootfstype ext4" \
          "initoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"" \
          "initrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" \
-         "udev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme --subsystem-match=mmc --subsystem-match=mmc_host --subsystem-match=platform" > $INITOVERLAYFS_CONF
+         "udev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme --subsystem-match=mmc --subsystem-match=mmc_host --subsystem-match=platform" \
+         "udev_trigger_generic udevadm trigger --type=devices --action=add" > $INITOVERLAYFS_CONF
 
   erofs_compression_supported="true"
   . /etc/os-release

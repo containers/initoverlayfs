@@ -596,21 +596,36 @@ int main(void) {
                              .bootfstype = {0, 0},
                              .fs = {0, 0},
                              .fstype = {0, 0},
-                             .udev_trigger = {0, 0}};
+                             .udev_trigger = {0, 0},
+                             .udev_trigger_generic = {0, 0}};
   if (conf_construct(&conf))
     return 0;
 
   conf_read(&conf, "/etc/initoverlayfs.conf");
-  autofree char** udev_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
+  autofree char** udev_trigger_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
   waitpid(udevd_pid, 0, 0);
-  const pid_t udev_trigger_pid = udev_trigger(udev_argv);
+  const pid_t udev_trigger_pid = udev_trigger(udev_trigger_argv);
   convert_bootfs(&conf);
   convert_fs(&conf);
   waitpid(udev_trigger_pid, 0, 0);
   waitpid(loop_pid, 0, 0);
+  pid_t udev_wait_pid;
+  fork_execlp_no_wait(udev_wait_pid, "udevadm", "wait", "-t", "8",
+                      conf.bootfs.val->c_str);
+  int status;
+  waitpid(udev_wait_pid, &status, 0);
+  if (WIFEXITED(status) && WEXITSTATUS(status)) {
+    print("optimized udev trigger failed, fall back to generic: %d && %d\n",
+          WIFEXITED(status), WEXITSTATUS(status));
+    autofree char** udev_trigger_generic_argv =
+        cmd_to_argv(conf.udev_trigger_generic.val->c_str);
+    const pid_t udev_trigger_generic_pid =
+        udev_trigger(udev_trigger_generic_argv);
+    waitpid(udev_trigger_generic_pid, 0, 0);
+  }
+
   fork_execlp("udevadm", "wait", conf.bootfs.val->c_str);
   errno = 0;
-
   mounts(&conf);
   if (switchroot("/initoverlayfs")) {
     print("switchroot(\"/initoverlayfs\") %d (%s)\n", errno, strerror(errno));

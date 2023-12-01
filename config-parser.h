@@ -14,10 +14,13 @@ static inline int conf_construct(conf* c) {
   c->fstype.scoped = (str*)calloc(1, sizeof(str));
   c->udev_trigger.val = (str*)calloc(1, sizeof(str));
   c->udev_trigger.scoped = (str*)calloc(1, sizeof(str));
+  c->udev_trigger_generic.val = (str*)calloc(1, sizeof(str));
+  c->udev_trigger_generic.scoped = (str*)calloc(1, sizeof(str));
   return !c->bootfs.val || !c->bootfs.scoped || !c->bootfstype.val ||
          !c->bootfstype.scoped || !c->fs.val || !c->fs.scoped ||
          !c->fstype.val || !c->fstype.scoped || !c->udev_trigger.val ||
-         !c->udev_trigger.scoped;
+         !c->udev_trigger.scoped || !c->udev_trigger_generic.val ||
+         !c->udev_trigger_generic.scoped;
 }
 
 static inline void set_conf(pair* conf, str** line, const size_t key_len) {
@@ -41,6 +44,9 @@ static inline void conf_set_pick(conf* c, str** line) {
   const str fstype_str = {.c_str = "fstype", .len = sizeof("fstype") - 1};
   const str udev_trigger_str = {.c_str = "udev_trigger",
                                 .len = sizeof("udev_trigger") - 1};
+  const str udev_trigger_generic_str = {
+      .c_str = "udev_trigger_generic",
+      .len = sizeof("udev_trigger_generic") - 1};
 
   if (is_line_key(*line, &bootfs_str))
     set_conf(&c->bootfs, line, bootfs_str.len);
@@ -52,17 +58,21 @@ static inline void conf_set_pick(conf* c, str** line) {
     set_conf(&c->fstype, line, fstype_str.len);
   else if (is_line_key(*line, &udev_trigger_str))
     set_conf(&c->udev_trigger, line, udev_trigger_str.len);
+  else if (is_line_key(*line, &udev_trigger_generic_str))
+    set_conf(&c->udev_trigger_generic, line, udev_trigger_generic_str.len);
 }
 
 static inline conf* conf_print(conf* c) {
 #ifdef DEBUG
   printd(
       "bootfs: {\"%s\", \"%s\"}, bootfstype: {\"%s\", \"%s\"}, fs: {\"%s\", "
-      "\"%s\"}, fstype: {\"%s\", \"%s\"}, udev_trigger: {\"%s\", \"%s\"}\n",
+      "\"%s\"}, fstype: {\"%s\", \"%s\"}, udev_trigger: {\"%s\", \"%s\"}, "
+      "udev_trigger_generic: {\"%s\", \"%s\"}\n",
       c->bootfs.val->c_str, c->bootfs.scoped->c_str, c->bootfstype.val->c_str,
       c->bootfstype.scoped->c_str, c->fs.val->c_str, c->fs.scoped->c_str,
       c->fstype.val->c_str, c->fstype.scoped->c_str, c->udev_trigger.val->c_str,
-      c->udev_trigger.scoped->c_str);
+      c->udev_trigger.scoped->c_str, c->udev_trigger_generic.val->c_str,
+      c->udev_trigger_generic.scoped->c_str);
 #endif
   return c;
 }
