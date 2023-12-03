@@ -1,9 +1,17 @@
 #!/bin/bash
 
+set -x
+
 if [ "${TMT_REBOOT_COUNT}" == "1" ];then
    echo -n "machine is up"
+   storage_init=$(journalctl -r | grep "init -> usr/sbin/storage-init" | tail -1)
+   exit_code="$?"
+   if [ "$exit_code" != "0" ]; then
+      echo -n "initoverlayfs,  storage-init messages not found in journal"
+      exit "$exit_code"
+   fi 
+   echo -n "initoverlayfs boot complete"
    exit 0
-   #echo -n "Verifying initoverlayfs in /boot"
 fi
 
 RPM_EXIST=$(rpm -qa | grep -i initoverlayfs)

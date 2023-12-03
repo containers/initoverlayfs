@@ -8,19 +8,23 @@ provision:
    how: local
 
 adjust:
+ - when: distro == centos-stream-9
    prepare+:
      - name: Prepare c9s Repo
        how: shell
        order: 10
        script: |
          dnf install -y  epel-release
-   when: distro == centos-stream-9
 
-prepare:
+ - when: scenario == manual
+   prepare+:
      - name: Prepare Repos
        how: shell
+       order: 10
        script: |
           dnf copr enable -y @centos-automotive-sig/next
+
+prepare:
      - name: Install rpms
        how: install
        package: initoverlayfs
