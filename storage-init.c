@@ -430,15 +430,15 @@ static inline pid_t udev_trigger(char** udev_trigger) {
   return pid;
 }
 
-static inline int convert_bootfs(conf* c) {
+static inline bool convert_bootfs(conf* c) {
   if (!c->bootfs.val->c_str) {
     print("c->bootfs.val.c_str pointer is null\n");
-    return -5;
+    return false;
   }
 
   if (!c->bootfs.val->c_str[0]) {
     print("c->bootfs.val.c_str string is \"%s\"\n", c->bootfs.val->c_str);
-    return -4;
+    return false;
   }
 
   const char* token = strtok(c->bootfs.val->c_str, "=");
@@ -446,25 +446,31 @@ static inline int convert_bootfs(conf* c) {
   if (!strcmp(token, "PARTLABEL")) {
     token = strtok(NULL, "=");
     if (asprintf(&bootfs_tmp, "/dev/disk/by-partlabel/%s", token) < 0)
-      return -1;
+      return false;
   } else if (!strcmp(token, "LABEL")) {
     token = strtok(NULL, "=");
     if (asprintf(&bootfs_tmp, "/dev/disk/by-label/%s", token) < 0)
-      return -1;
+      return false;
   } else if (!strcmp(token, "UUID")) {
     token = strtok(NULL, "=");
     if (asprintf(&bootfs_tmp, "/dev/disk/by-uuid/%s", token) < 0)
-      return -2;
+      return false;
   } else if (!strcmp(token, "PARTUUID")) {
     token = strtok(NULL, "=");
     if (asprintf(&bootfs_tmp, "/dev/disk/by-partuuid/%s", token) < 0)
-      return -2;
+      return false;
   } else
-    return -3;
+    return false;
 
   swap(c->bootfs.scoped->c_str, bootfs_tmp);
   c->bootfs.val->c_str = c->bootfs.scoped->c_str;
-  return 0;
+  if (mount(c->bootfs.val->c_str, "/boot", c->bootfstype.val->c_str, 0, NULL))
+    print(
+        "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
+        "%d (%s)\n",
+        c->bootfs.val->c_str, c->bootfstype.val->c_str, errno, strerror(errno));
+
+  return true;
 }
 
 static inline int convert_fs(conf* c) {
@@ -509,17 +515,6 @@ static inline int convert_fs(conf* c) {
   "overlay/work"
 
 static inline void mounts(const conf* c) {
-  if (!c->bootfs.val->c_str) {
-    print("bootfs empty\n");
-    return;
-  }
-
-  if (mount(c->bootfs.val->c_str, "/boot", c->bootfstype.val->c_str, 0, NULL))
-    print(
-        "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
-        "%d (%s)\n",
-        c->bootfs.val->c_str, c->bootfstype.val->c_str, errno, strerror(errno));
-
   autofree char* dev_loop = 0;
   if (c->fs.val->c_str && losetup(&dev_loop, c->fs.val->c_str))
     print("losetup(\"%s\", \"%s\") %d (%s)\n", dev_loop, c->fs.val->c_str,
@@ -584,6 +579,32 @@ static inline char** cmd_to_argv(char* cmd) {
   return argv;
 }
 
+void wait_for_bootfs(const conf* c) {
+  pid_t udev_wait_pid;
+  fork_execlp_no_wait(udev_wait_pid, "udevadm", "wait", "-t", "8",
+                      c->bootfs.val->c_str);
+  int status;
+  waitpid(udev_wait_pid, &status, 0);
+  if (WIFEXITED(status) && WEXITSTATUS(status)) {
+    print("optimized udev trigger failed, fall back to generic: %d && %d\n",
+          WIFEXITED(status), WEXITSTATUS(status));
+    autofree char** udev_trigger_generic_argv =
+        cmd_to_argv(c->udev_trigger_generic.val->c_str);
+    const pid_t udev_trigger_generic_pid =
+        udev_trigger(udev_trigger_generic_argv);
+    waitpid(udev_trigger_generic_pid, 0, 0);
+  }
+
+  fork_execlp("udevadm", "wait", c->bootfs.val->c_str);
+}
+
+void exec_init(void) {
+  execl_single_arg("/sbin/init");
+  execl_single_arg("/etc/init");
+  execl_single_arg("/bin/init");
+  execl_single_arg("/bin/sh");
+}
+
 int main(void) {
   mount_proc_sys_dev();
   autofclose FILE* kmsg_f_scoped = log_open_kmsg();
@@ -605,26 +626,13 @@ int main(void) {
   autofree char** udev_trigger_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
   waitpid(udevd_pid, 0, 0);
   const pid_t udev_trigger_pid = udev_trigger(udev_trigger_argv);
-  convert_bootfs(&conf);
+  const bool do_wait_for_bootfs = convert_bootfs(&conf);
   convert_fs(&conf);
   waitpid(udev_trigger_pid, 0, 0);
   waitpid(loop_pid, 0, 0);
-  pid_t udev_wait_pid;
-  fork_execlp_no_wait(udev_wait_pid, "udevadm", "wait", "-t", "8",
-                      conf.bootfs.val->c_str);
-  int status;
-  waitpid(udev_wait_pid, &status, 0);
-  if (WIFEXITED(status) && WEXITSTATUS(status)) {
-    print("optimized udev trigger failed, fall back to generic: %d && %d\n",
-          WIFEXITED(status), WEXITSTATUS(status));
-    autofree char** udev_trigger_generic_argv =
-        cmd_to_argv(conf.udev_trigger_generic.val->c_str);
-    const pid_t udev_trigger_generic_pid =
-        udev_trigger(udev_trigger_generic_argv);
-    waitpid(udev_trigger_generic_pid, 0, 0);
-  }
+  if (do_wait_for_bootfs)
+    wait_for_bootfs(&conf);
 
-  fork_execlp("udevadm", "wait", conf.bootfs.val->c_str);
   errno = 0;
   mounts(&conf);
   if (switchroot("/initoverlayfs")) {
@@ -632,10 +640,7 @@ int main(void) {
     return 0;
   }
 
-  execl_single_arg("/sbin/init");
-  execl_single_arg("/etc/init");
-  execl_single_arg("/bin/init");
-  execl_single_arg("/bin/sh");
+  exec_init();
 
   return 0;
 }
