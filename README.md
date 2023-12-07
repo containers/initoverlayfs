@@ -6,10 +6,10 @@ A scalable solution for initial filesystems focused on minimal resource usage, s
 - [Why use initoverlayfs?](#why-use-initoverlayfs)
 - [Dependancies](#dependancies)
 - [Installation](#installation)
-    * [Step 1 - Deploy the software](#step-1---deploy-the-software)
-    * [Step 2 - Run initoverlayfs-install](#step-2---run-initoverlayfs-install)
-    * [Step 3 - Reboot to test](#step-3---reboot-to-test)
-    * [Step 4 - Validating the boot](#step-4---validating-the-boot)
+	* [Step 1 - Deploy the software](#step-1---deploy-the-software)
+	* [Step 2 - Run initoverlayfs-install](#step-2---run-initoverlayfs-install)
+	* [Step 3 - Reboot to test](#step-3---reboot-to-test)
+	* [Step 4 - Validating the boot](#step-4---validating-the-boot)
 
 # What is initoverlayfs?
 
@@ -60,7 +60,7 @@ For illustration, consider a comparison of the sizes using dracut versus initove
 ``` bash
 # /usr/bin/initoverlayfs-install
 # du -sh /boot/initramfs-6.5.5-300.fc39.x86_64.img
-13M	/boot/initramfs-6.5.5-300.fc39.x86_64.img 
+13M	/boot/initramfs-6.5.5-300.fc39.x86_64.img
 ^^ <--- from 36M to 13M
 ```
 

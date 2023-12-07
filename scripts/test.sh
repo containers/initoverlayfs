@@ -1,4 +1,7 @@
 #!/bin/bash
+# disable shellcheck for "Double quote to prevent globbing" until tested fix
+# shellcheck disable=SC2086
+#
 
 set -ex
 
