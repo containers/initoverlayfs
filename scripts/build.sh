@@ -5,7 +5,7 @@ set -e
 failure() {
   local lineno=$1
   local msg=$2
-  echo "Failed at $lineno: $msg"
+  echo "Failed at ${lineno}: ${msg}"
 }
 
 trap 'failure ${LINENO} "$BASH_COMMAND"' ERR
@@ -19,9 +19,9 @@ DIR_TO_DUMP_INITRAMFS="/run/initoverlayfs"
 fs="erofs"
 
 extract_initrd_into_initoverlayfs() {
-  sudo mkdir -p "$DIR_TO_DUMP_INITRAMFS"
+  sudo mkdir -p "${DIR_TO_DUMP_INITRAMFS}"
 
-  file_type=$(file /boot/initramfs-$release.img)
+  file_type=$(file /boot/initramfs-${release}.img)
   decompressor="lz4cat"
   decompressor_dracut="--lz4"
   if [[ "$file_type" == *"ASCII cpio archive (SVR4 with no CRC)"* ]]; then
@@ -34,16 +34,16 @@ extract_initrd_into_initoverlayfs() {
 
   if command -v mkfs.erofs; then
     cd /run/initoverlayfs/
-    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | $decompressor | sudo cpio -ivd
+    sudo /usr/lib/dracut/skipcpio /boot/initramfs-${release}.img | $decompressor | sudo cpio -ivd
     cd -
   else
     fs="ext4"
     dd if=/dev/zero of=/boot/initoverlayfs-$release.img bs=64M count=1
-    dev=$(sudo losetup -fP --show /boot/initoverlayfs-$release.img)
+    dev=$(sudo losetup -fP --show /boot/initoverlayfs-${release}.img)
     sudo mkfs.$fs $dev
     sudo mount $dev "$DIR_TO_DUMP_INITRAMFS"
     cd "$DIR_TO_DUMP_INITRAMFS"
-    sudo /usr/lib/dracut/skipcpio /boot/initramfs-$release.img | zstd -d --stdout | sudo cpio -ivd
+    sudo /usr/lib/dracut/skipcpio /boot/initramfs-${release}.img | zstd -d --stdout | sudo cpio -ivd
     sudo sync
     cd -
     while ! sudo umount "$DIR_TO_DUMP_INITRAMFS"; do
@@ -104,9 +104,9 @@ sudo mkdir -p "$UNLOCK_OVERLAYDIR/upper" "$UNLOCK_OVERLAYDIR/work"
 # sudo ln -sf storage-init $DIR_TO_DUMP_INITRAMFS/usr/sbin/init
 # sudo ln -sf usr/bin/storage-init $DIR_TO_DUMP_INITRAMFS/init
 if [ $fs == "erofs" ]; then
-  sudo mkfs.$fs /boot/initoverlayfs-$release.img /run/initoverlayfs/
+  sudo mkfs.$fs /boot/initoverlayfs-${release}.img /run/initoverlayfs/
 fi
-#sudo losetup -fP /boot/initoverlayfs-$release.img
+#sudo losetup -fP /boot/initoverlayfs-${release}.img
 # ln -s init /usr/sbin/storage-init
 initramfs=$(sudo ls /boot/initramfs-* | grep -v rescue | tail -n1)
 sudo du -sh $initramfs
@@ -128,7 +128,7 @@ sudo dracut $decompressor_dracut -v -f --strip -M
 sudo du -sh /boot/initramfs*
 sudo lsinitrd | grep "storage-init"
 sudo du -sh $initramfs
-# sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-$release.conf
+# sed -i '/^initrd /d' /boot/loader/entries/9c03d22e1ec14ddaac4f0dabb884e434-${release}.conf
 
 bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)
 # should be ro rhgb quiet, cannot remount ro, but can fix
@@ -137,6 +137,6 @@ bls_file=$(sudo ls /boot/loader/entries/ | grep -v rescue | tail -n1)
 sudo systemctl daemon-reload
 #sudo sed -i "s#options #options initoverlayfs=UUID=$uuid initoverlayfstype=ext4 rdinit=/usr/sbin/storage-init #g" /boot/loader/entries/$bls_file
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/storage-init #g" /boot/loader/entries/$bls_file
-sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
-sudo cat /boot/loader/entries/$bls_file
+sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/${bls_file}
+sudo cat /boot/loader/entries/${bls_file}
 
