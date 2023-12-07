@@ -33,7 +33,7 @@ install -D -m755 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD
 %files
 %license LICENSE
 %doc README.md
-%attr(0755,root,root) 
+%attr(0755,root,root)
 %{_bindir}/initoverlayfs-install
 %{_prefix}/sbin/storage-init
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/

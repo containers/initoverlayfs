@@ -54,7 +54,7 @@ extract_initrd_into_initoverlayfs() {
   fi
 }
 
-cd 
+cd
 #epoch=$(date +%s)
 # systemd-analyze > systemd-analyze$epoch.txt
 #journalctl --output=short-monotonic > journalctl$epoch.txt
