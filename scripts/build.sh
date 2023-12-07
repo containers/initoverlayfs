@@ -61,7 +61,7 @@ extract_initrd_into_initoverlayfs() {
   fi
 }
 
-cd 
+cd
 #epoch=$(date +%s)
 # systemd-analyze > systemd-analyze$epoch.txt
 #journalctl --output=short-monotonic > journalctl$epoch.txt
@@ -146,4 +146,3 @@ sudo systemctl daemon-reload
 #sudo sed -i "s#options #options initoverlayfs=$boot_partition initoverlayfstype=ext4 rdinit=/usr/sbin/storage-init #g" /boot/loader/entries/$bls_file
 sudo sed -i "s/ quiet/ console=ttyS0/g" /boot/loader/entries/$bls_file
 sudo cat /boot/loader/entries/$bls_file
-
