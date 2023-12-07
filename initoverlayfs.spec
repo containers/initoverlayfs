@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.97
+Version:       0.98
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
