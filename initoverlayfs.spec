@@ -1,5 +1,5 @@
 Name:          initoverlayfs
-Version:       0.97
+Version:       0.98
 Release:       1%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
 
@@ -39,6 +39,11 @@ install -D -m755 lib/dracut/modules.d/81initoverlayfs/module-setup.sh $RPM_BUILD
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/
 
 %changelog
+* Thu Dec  7 2023 Stephen Smoogen <ssmoogen@redhat.com> - 0.98-1
+- Release 0.98
+- Improve documentation (PR31 and ecurtin)
+- Only wait for bootfs storage device if it is configured (PR32)
+
 * Fri Nov 17 2023 Eric Curtin <ecurtin@redhat.com> - 0.97-1
 - Raspberry Pi 4 enablement.
 

@@ -1,5 +1,12 @@
 #!/bin/bash
 
+#  https://www.shellcheck.net/wiki/SC2016 -- Expressions don't expand in singl...
+# this comes up due to us trying to output a shell script which needs to keep its variables. Safe to disable
+# shellcheck disable=SC2016
+# this needs a larger set of hand tests to fix.
+#  https://www.shellcheck.net/wiki/SC2086 -- Double quote to prevent globbing ...
+# shellcheck disable=SC2086
+
 set -e
 
 failure() {
@@ -73,7 +80,7 @@ install() {
 sed -i "s/initrd-udevadm-cleanup-db.service/initrd-udevadm-cleanup-db.service mount-sysroot.service/g" /usr/lib/systemd/system/initrd-switch-root.target
 chcon system_u:object_r:systemd_unit_file_t:s0 /usr/lib/systemd/system/mount-sysroot.service
 cd /usr/lib/systemd/system/sysinit.target.wants/
-ln -s ../mount-sysroot.service
+ln -s ../mount-sysroot.service .
 cd -
 systemctl daemon-reload
 du -sh /boot/initramfs*
