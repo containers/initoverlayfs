@@ -26,7 +26,7 @@ echo -n "Install initoverlayfs"
 
 exit_code="$?"
 
-if [ "$exit_code" != "0" ]; then
+ef [ "$exit_code" != "0" ]; then
    echo -n "initoverlayfs-install completeted with $exit_code"
    exit "$exit_code"
 fi
@@ -40,5 +40,5 @@ if [ "$exit_code" != "0" ]; then
    exit "$exit_code"
 fi
 
-/usr/local/bin/tmt-reboot
+#/usr/local/bin/tmt-reboot
 
