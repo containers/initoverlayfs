@@ -5,6 +5,7 @@ set -e
 # Constants with default value
 CAT="lz4cat"
 
+INITRAMFS_DIR=""
 INITOVERLAYFS_CONF="/etc/initoverlayfs.conf"
 INITRAMFS_DUMP_DIR="/var/lib/initoverlayfs"
 
@@ -12,23 +13,41 @@ INITRAMFS_DUMP_DIR="/var/lib/initoverlayfs"
 SUPPORTED_FILESYSTEM=("erofs")
 SKIPCPIO_BIN="/usr/lib/dracut/skipcpio"
 
+detect_path_initramfs() {
+    paths_initramfs=(
+	"/boot/initramfs-$kver.img"
+        "/usr/lib/modules/$kver/initramfs.img"
+    )
+
+    for path in "${paths_initramfs[@]}"; do
+        if [[ -e "${path}" ]]; then
+	    INITRAMFS_DIR=$(dirname "${path}")
+	    return
+        fi
+
+    done
+
+    echo "Cannot detect initramfs path, aborting..."
+    exit 1
+}
+
 exec_erofs() {
     pushd "$INITRAMFS_DUMP_DIR"
-        "$SKIPCPIO_BIN" "/boot/initramfs-$kver.img" | "$CAT" | cpio -ivd
+        "$SKIPCPIO_BIN" "${INITRAMFS_DIR}/initramfs-$kver.img" | "$CAT" | cpio -ivd
     popd
-    rm -f "/boot/initoverlayfs-$kver.img"
-    mkfs.erofs $erofs_compression "/boot/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
+    rm -f "${INITRAMFS_DIR}/initoverlayfs-$kver.img"
+    mkfs.erofs $erofs_compression "${INITRAMFS_DIR}/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
 }
 
 # Support for ext4 is currently under development.
 exec_ext4() {
-    dd if=/dev/zero of=/boot/initoverlayfs-"$kver".img bs=64M count=1
-    dev=$(losetup -fP --show /boot/initoverlayfs-"$kver".img)
+    dd if=/dev/zero of="${INITRAMFS_DIR}"/initoverlayfs-"$kver".img bs=64M count=1
+    dev=$(losetup -fP --show "${INITRAMFS_DIR}"/initoverlayfs-"$kver".img)
     mkfs.ext4 "${dev}"
     mount "${dev}" "${INITRAMFS_DUMP_DIR}"
 
     pushd "${INITRAMFS_DUMP_DIR}" || exit
-        "${SKIPCPIO_BIN}" /boot/initramfs-"$kver".img | zstd -d --stdout | cpio -ivd
+        "${SKIPCPIO_BIN}" "${INITRAMFS_DIR}"/initramfs-"$kver".img | zstd -d --stdout | cpio -ivd
         sync
     popd || exit
 
@@ -46,7 +65,7 @@ detect_initramfs() {
 
     echo "Extracting initrd into initoverlayfs..."
 
-    file_path="/boot/initramfs-$kver.img"
+    file_path="${INITRAMFS_DIR}/initramfs-$kver.img"
     bin="$($SKIPCPIO_BIN "$file_path" | { read -r -N 6 bin && echo "$bin"; })"
     case $bin in
         $'\x1f\x8b'*)
@@ -138,8 +157,10 @@ if [ -z "$kver" ]; then
   kver="$(uname -r)"
 fi
 
+detect_path_initramfs
+
 if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CONF"; then
-  boot_partition=$(< /etc/fstab grep "/boot.*ext4" | awk '{print $1}')
+  boot_partition=$(< /etc/fstab grep "${INITRAMFS_DIR}.*ext4" | awk '{print $1}')
   printf "%s\n%s\n%s\n%s\n%s\n%s\n" \
          "bootfs $boot_partition" \
          "bootfstype ext4" \
