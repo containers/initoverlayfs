@@ -464,11 +464,6 @@ static inline bool convert_bootfs(conf* c) {
 
   swap(c->bootfs.scoped->c_str, bootfs_tmp);
   c->bootfs.val->c_str = c->bootfs.scoped->c_str;
-  if (mount(c->bootfs.val->c_str, "/boot", c->bootfstype.val->c_str, 0, NULL))
-    print(
-        "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
-        "%d (%s)\n",
-        c->bootfs.val->c_str, c->bootfstype.val->c_str, errno, strerror(errno));
 
   return true;
 }
@@ -632,6 +627,15 @@ int main(void) {
   waitpid(loop_pid, 0, 0);
   if (do_wait_for_bootfs)
     wait_for_bootfs(&conf);
+
+  errno = 0;
+  if (mount(conf.bootfs.val->c_str, "/boot", conf.bootfstype.val->c_str, 0,
+            NULL))
+    print(
+        "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
+        "%d (%s)\n",
+        conf.bootfs.val->c_str, conf.bootfstype.val->c_str, errno,
+        strerror(errno));
 
   errno = 0;
   mounts(&conf);
