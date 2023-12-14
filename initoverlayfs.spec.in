@@ -1,8 +1,7 @@
 Name:          initoverlayfs
-Version:       0.98
-Release:       1%{?dist}
+Version:       @VERSION@
+Release:       @RELEASE@%{?dist}
 Summary:       An initial scalable filesystem for Linux operating systems
-
 License:       GPL-2.0-only
 URL:           https://github.com/containers/initoverlayfs
 Source0:       %{url}/archive/%{version}/%{name}-%{version}.tar.gz

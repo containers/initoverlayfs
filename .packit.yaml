@@ -12,6 +12,14 @@ update_release: false
 srpm_build_deps:
   - make
 
+actions:
+  post-upstream-clone:
+    - bash -c 'git config --global --add safe.directory $(pwd)'
+    - bash -c './build-scripts/create-spec.sh'
+
+  get-current-version:
+    - bash -c './build-scripts/version.sh'
+
 jobs:
   - job: copr_build
     trigger: pull_request
