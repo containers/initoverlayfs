@@ -1,0 +1,5 @@
+summary: test verify install is working
+test: ./test.sh
+tier: 0
+framework: shell
+

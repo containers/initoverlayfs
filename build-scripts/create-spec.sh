@@ -1,0 +1,14 @@
+#!/bin/bash -xe
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+VERSION_SCRIPT=$(dirname "$(readlink -f "$0")")/version.sh
+
+VERSION="$(${VERSION_SCRIPT} short)"
+RELEASE="$(${VERSION_SCRIPT} release)"
+
+# Set version and release
+sed \
+    -e "s|@VERSION@|${VERSION}|g" \
+    -e "s|@RELEASE@|${RELEASE}|g" \
+    < initoverlayfs.spec.in \
+    > initoverlayfs.spec
