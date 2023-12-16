@@ -574,7 +574,7 @@ static inline char** cmd_to_argv(char* cmd) {
   return argv;
 }
 
-void wait_for_bootfs(const conf* c) {
+void wait_mount_bootfs(const conf* c) {
   pid_t udev_wait_pid;
   fork_execlp_no_wait(udev_wait_pid, "udevadm", "wait", "-t", "8",
                       c->bootfs.val->c_str);
@@ -591,6 +591,13 @@ void wait_for_bootfs(const conf* c) {
   }
 
   fork_execlp("udevadm", "wait", c->bootfs.val->c_str);
+
+  errno = 0;
+  if (mount(c->bootfs.val->c_str, "/boot", c->bootfstype.val->c_str, 0, NULL))
+    print(
+        "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
+        "%d (%s)\n",
+        c->bootfs.val->c_str, c->bootfstype.val->c_str, errno, strerror(errno));
 }
 
 void exec_init(void) {
@@ -621,21 +628,12 @@ int main(void) {
   autofree char** udev_trigger_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
   waitpid(udevd_pid, 0, 0);
   const pid_t udev_trigger_pid = udev_trigger(udev_trigger_argv);
-  const bool do_wait_for_bootfs = convert_bootfs(&conf);
+  const bool do_bootfs = convert_bootfs(&conf);
   convert_fs(&conf);
   waitpid(udev_trigger_pid, 0, 0);
   waitpid(loop_pid, 0, 0);
-  if (do_wait_for_bootfs)
-    wait_for_bootfs(&conf);
-
-  errno = 0;
-  if (mount(conf.bootfs.val->c_str, "/boot", conf.bootfstype.val->c_str, 0,
-            NULL))
-    print(
-        "mount(\"%s\", \"/boot\", \"%s\", 0, NULL) "
-        "%d (%s)\n",
-        conf.bootfs.val->c_str, conf.bootfstype.val->c_str, errno,
-        strerror(errno));
+  if (do_bootfs)
+    wait_mount_bootfs(&conf);
 
   errno = 0;
   mounts(&conf);
