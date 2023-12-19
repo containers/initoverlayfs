@@ -17,5 +17,7 @@ install() {
     if [ ! -e "/sbin/init" ]; then
         ln_r /usr/sbin/storage-init "/sbin/init"
     fi
+
+    > "${initdir}/usr/bin/bash"
 }
 
