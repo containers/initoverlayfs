@@ -1,22 +1,27 @@
 #!/usr/bin/bash
 
 installkernel() {
-    hostonly="" instmods erofs overlay
+    hostonly="" instmods erofs overlay loop
+}
+
+# called by dracut
+depends() {
+    echo "systemd"
 }
 
 install() {
-    inst_multiple -o /etc/initoverlayfs.conf
-    inst_multiple /usr/sbin/storage-init "$systemdutildir"/systemd-udevd \
-      udevadm modprobe /etc/initoverlayfs.conf
-    inst_dir /boot /initrofs /overlay /overlay/upper /overlay/work /initoverlayfs
+    inst_multiple -o /etc/initoverlayfs.conf /usr/sbin/storage-init \
+      "$systemdsystemunitdir/pre-initoverlayfs.target" \
+      "$systemdsystemunitdir/pre-initoverlayfs.service" \
+      "$systemdsystemunitdir/pre-initoverlayfs-switch-root.service"
 
-    if [ ! -e "/init" ]; then
-        ln_r /usr/sbin/storage-init "/init"
-    fi
 
-    if [ ! -e "/sbin/init" ]; then
-        ln_r /usr/sbin/storage-init "/sbin/init"
-    fi
+    inst_dir /boot /initrofs /overlay /overlay/upper /overlay/work \
+      /initoverlayfs
+
+    $SYSTEMCTL -q --root "$initdir" set-default pre-initoverlayfs.target
+    $SYSTEMCTL -q --root "$initdir" add-wants sysinit.target pre-initoverlayfs.service
+    $SYSTEMCTL -q --root "$initdir" add-wants sysinit.target pre-initoverlayfs-switch-root.service
 
     > "${initdir}/usr/bin/bash"
 }

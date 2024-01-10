@@ -1,0 +1,18 @@
+[Unit]
+Description=pre-initoverlayfs initialization
+AssertPathExists=/etc/initrd-release
+DefaultDependencies=no
+ConditionPathExists=/etc/initrd-release
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly
+Before=sysinit.target pre-initoverlayfs.target
+After=systemd-journald.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/storage-init
+StandardInput=null
+StandardOutput=journal+console
+StandardError=journal+console
+RemainAfterExit=yes
+
