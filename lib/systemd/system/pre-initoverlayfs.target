@@ -1,0 +1,9 @@
+[Unit]
+Description=pre-initoverlayfs Default Target
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly
+AssertPathExists=/etc/initrd-release
+Requires=basic.target
+After=pre-initoverlayfs.service rescue.target
+AllowIsolate=yes
+

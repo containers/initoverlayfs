@@ -416,20 +416,6 @@ static inline int mount_proc_sys_dev(void) {
   return 0;
 }
 
-static inline pid_t udev_trigger(char** udev_trigger) {
-  pid_t pid;
-  if (udev_trigger && *udev_trigger) {
-    fork_execvp_no_wait(pid, udev_trigger);
-    return pid;
-  }
-
-  fork_execlp_no_wait(pid, "udevadm", "trigger", "--type=devices",
-                      "--action=add", "--subsystem-match=module",
-                      "--subsystem-match=block", "--subsystem-match=virtio",
-                      "--subsystem-match=pci", "--subsystem-match=nvme");
-  return pid;
-}
-
 static inline bool convert_bootfs(conf* c) {
   if (!c->bootfs.val->c_str) {
     print("c->bootfs.val.c_str pointer is null\n");
@@ -509,6 +495,8 @@ static inline int convert_fs(conf* c) {
   "redirect_dir=on,lowerdir=/initrofs,upperdir=/overlay/upper,workdir=/" \
   "overlay/work"
 
+#define SYSROOT "/initoverlayfs"
+
 static inline void mounts(const conf* c) {
   autofree char* dev_loop = 0;
   if (c->fs.val->c_str && losetup(&dev_loop, c->fs.val->c_str))
@@ -521,19 +509,19 @@ static inline void mounts(const conf* c) {
         "%d (%s)\n",
         dev_loop, c->fstype.val->c_str, errno, strerror(errno));
 
-  if (mount("overlay", "/initoverlayfs", "overlay", 0,
+  if (mount("overlay", SYSROOT, "overlay", 0,
             "volatile," OVERLAY_STR) &&
       errno == EINVAL &&
-      mount("overlay", "/initoverlayfs", "overlay", 0, OVERLAY_STR))
+      mount("overlay", SYSROOT, "overlay", 0, OVERLAY_STR))
     print(
-        "mount(\"overlay\", \"/initoverlayfs\", \"overlay\", 0, \"" OVERLAY_STR
+        "mount(\"overlay\", \"" SYSROOT "\", \"overlay\", 0, \"" OVERLAY_STR
         "\") %d (%s)\n",
         errno, strerror(errno));
 
-  if (mount("/boot", "/initoverlayfs/boot", c->bootfstype.val->c_str, MS_MOVE,
+  if (mount("/boot", SYSROOT "/boot", c->bootfstype.val->c_str, MS_MOVE,
             NULL))
     print(
-        "mount(\"/boot\", \"/initoverlayfs/boot\", \"%s\", MS_MOVE, NULL) "
+        "mount(\"/boot\", \"" SYSROOT "/boot\", \"%s\", MS_MOVE, NULL) "
         "%d (%s)\n",
         c->bootfstype.val->c_str, errno, strerror(errno));
 }
@@ -575,21 +563,6 @@ static inline char** cmd_to_argv(char* cmd) {
 }
 
 void wait_mount_bootfs(const conf* c) {
-  pid_t udev_wait_pid;
-  fork_execlp_no_wait(udev_wait_pid, "udevadm", "wait", "-t", "8",
-                      c->bootfs.val->c_str);
-  int status;
-  waitpid(udev_wait_pid, &status, 0);
-  if (WIFEXITED(status) && WEXITSTATUS(status)) {
-    print("optimized udev trigger failed, fall back to generic: %d && %d\n",
-          WIFEXITED(status), WEXITSTATUS(status));
-    autofree char** udev_trigger_generic_argv =
-        cmd_to_argv(c->udev_trigger_generic.val->c_str);
-    const pid_t udev_trigger_generic_pid =
-        udev_trigger(udev_trigger_generic_argv);
-    waitpid(udev_trigger_generic_pid, 0, 0);
-  }
-
   fork_execlp("udevadm", "wait", c->bootfs.val->c_str);
 
   errno = 0;
@@ -608,41 +581,24 @@ void exec_init(void) {
 }
 
 int main(void) {
-  mount_proc_sys_dev();
-  autofclose FILE* kmsg_f_scoped = log_open_kmsg();
-  kmsg_f = kmsg_f_scoped;
-  pid_t udevd_pid;
-  fork_execl_no_wait(udevd_pid, "/lib/systemd/systemd-udevd", "--daemon");
   pid_t loop_pid;
   fork_execl_no_wait(loop_pid, "/usr/sbin/modprobe", "loop");
   autofree_conf conf conf = {.bootfs = {0, 0},
                              .bootfstype = {0, 0},
                              .fs = {0, 0},
-                             .fstype = {0, 0},
-                             .udev_trigger = {0, 0},
-                             .udev_trigger_generic = {0, 0}};
+                             .fstype = {0, 0}};
   if (conf_construct(&conf))
     return 0;
 
   conf_read(&conf, "/etc/initoverlayfs.conf");
-  autofree char** udev_trigger_argv = cmd_to_argv(conf.udev_trigger.val->c_str);
-  waitpid(udevd_pid, 0, 0);
-  const pid_t udev_trigger_pid = udev_trigger(udev_trigger_argv);
   const bool do_bootfs = convert_bootfs(&conf);
   convert_fs(&conf);
-  waitpid(udev_trigger_pid, 0, 0);
   waitpid(loop_pid, 0, 0);
   if (do_bootfs)
     wait_mount_bootfs(&conf);
 
   errno = 0;
   mounts(&conf);
-  if (switchroot("/initoverlayfs")) {
-    print("switchroot(\"/initoverlayfs\") %d (%s)\n", errno, strerror(errno));
-    return 0;
-  }
-
-  exec_init();
 
   return 0;
 }

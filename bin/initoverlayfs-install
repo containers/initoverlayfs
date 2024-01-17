@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 # Constants with default value
 CAT="lz4cat"
@@ -59,9 +59,7 @@ exec_ext4() {
 }
 
 detect_initramfs() {
-    if [ ! -d "${INITRAMFS_DUMP_DIR}" ]; then
-        mkdir -p "${INITRAMFS_DUMP_DIR}"
-    fi
+    mkdir -p "${INITRAMFS_DUMP_DIR}"
 
     echo "Extracting initrd into initoverlayfs..."
 
@@ -165,9 +163,7 @@ if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CO
          "bootfs $boot_partition" \
          "bootfstype ext4" \
          "initoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"" \
-         "initrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs\" -o \"bash systemd systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount base fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" \
-         "udev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme --subsystem-match=mmc --subsystem-match=mmc_host --subsystem-match=platform" \
-         "udev_trigger_generic udevadm trigger --type=devices --action=add" > $INITOVERLAYFS_CONF
+         "initrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
 
   erofs_compression_supported="true"
   # shellcheck disable=SC2034

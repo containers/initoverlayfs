@@ -63,8 +63,6 @@ typedef struct conf {
   pair bootfstype;
   pair fs;
   pair fstype;
-  pair udev_trigger;
-  pair udev_trigger_generic;
 } conf;
 
 static inline void cleanup_free_conf(conf* p) {
@@ -76,23 +74,15 @@ static inline void cleanup_free_conf(conf* p) {
     free(p->fs.scoped->c_str);
   if (p->fstype.scoped)
     free(p->fstype.scoped->c_str);
-  if (p->udev_trigger.scoped)
-    free(p->udev_trigger.scoped->c_str);
-  if (p->udev_trigger_generic.scoped)
-    free(p->udev_trigger_generic.scoped->c_str);
 
   free(p->bootfs.scoped);
   free(p->bootfstype.scoped);
   free(p->fs.scoped);
   free(p->fstype.scoped);
-  free(p->udev_trigger.scoped);
-  free(p->udev_trigger_generic.scoped);
   free(p->bootfs.val);
   free(p->bootfstype.val);
   free(p->fs.val);
   free(p->fstype.val);
-  free(p->udev_trigger.val);
-  free(p->udev_trigger_generic.val);
 }
 
 static inline void cleanup_free(void* p) {
