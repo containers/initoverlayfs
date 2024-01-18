@@ -44,6 +44,11 @@ install -D -m644 lib/systemd/system/pre-initoverlayfs-switch-root.service ${RPM_
 %{_prefix}/lib/systemd/system/pre-initoverlayfs-switch-root.service
 
 %changelog
+* Wed Jan 17 2024 Stephen Smoogen <ssmoogen@redhat.com> - 0.991-1
+- Update to 0.991 release.
+- fork storage-init as a systemd unit (ecurtin)
+- shell-less initrd work (ecurtin)
+
 * Thu Dec 14 2023 Stephen Smoogen <ssmoogen@redhat.com> - 0.99-1
 - Update to 0.99 release.
 - shellcheck corrections (Yariv)

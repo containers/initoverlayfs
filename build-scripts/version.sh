@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 # Current version of initoverlayfs
-VERSION=0.99
+VERSION=0.991
 # Specify if build is a official release or a snapshot build
 IS_RELEASE=false
 # Used for official releases. Increment if necessary
