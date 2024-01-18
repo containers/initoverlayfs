@@ -107,17 +107,6 @@ static inline void execl_single_arg(const char* exe) {
   execl(exe, exe, (char*)NULL);
 }
 
-static inline FILE* log_open_kmsg(void) {
-  kmsg_f = fopen("/dev/kmsg", "w");
-  if (!kmsg_f) {
-    print("open(\"/dev/kmsg\", \"w\"), %d = errno\n", errno);
-    return kmsg_f;
-  }
-
-  setvbuf(kmsg_f, 0, _IOLBF, 0);
-  return kmsg_f;
-}
-
 static inline long loop_ctl_get_free(void) {
   autoclose const int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
   if (loopctlfd < 0) {
