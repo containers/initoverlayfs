@@ -22,11 +22,11 @@ Requires: dracut
 
 %build
 RPM_OPT_FLAGS="${RPM_OPT_FLAGS/-flto=auto /}"
-gcc ${RPM_OPT_FLAGS} storage-init.c -o storage-init
+gcc ${RPM_OPT_FLAGS} initoverlayfs-setup.c -o initoverlayfs-setup
 
 %install
 install -D -m755 bin/initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install
-install -D -m755 storage-init ${RPM_BUILD_ROOT}/%{_sbindir}/storage-init
+install -D -m755 initoverlayfs-setup ${RPM_BUILD_ROOT}/%{_sbindir}/initoverlayfs-setup
 install -D -m755 lib/dracut/modules.d/81initoverlayfs/module-setup.sh ${RPM_BUILD_ROOT}/%{_prefix}/lib/dracut/modules.d/81initoverlayfs/module-setup.sh
 install -D -m644 lib/systemd/system/pre-initoverlayfs.target ${RPM_BUILD_ROOT}/%{_prefix}/lib/systemd/system/pre-initoverlayfs.target
 install -D -m644 lib/systemd/system/pre-initoverlayfs.service ${RPM_BUILD_ROOT}/%{_prefix}/lib/systemd/system/pre-initoverlayfs.service
@@ -37,7 +37,7 @@ install -D -m644 lib/systemd/system/pre-initoverlayfs-switch-root.service ${RPM_
 %doc README.md
 %attr(0755,root,root)
 %{_bindir}/initoverlayfs-install
-%{_sbindir}/storage-init
+%{_sbindir}/initoverlayfs-setup
 %{_prefix}/lib/dracut/modules.d/81initoverlayfs/
 %{_prefix}/lib/systemd/system/pre-initoverlayfs.target
 %{_prefix}/lib/systemd/system/pre-initoverlayfs.service
