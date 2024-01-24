@@ -10,7 +10,7 @@ After=systemd-journald.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/storage-init
+ExecStart=/usr/sbin/initoverlayfs-setup
 StandardInput=null
 StandardOutput=journal+console
 StandardError=journal+console
