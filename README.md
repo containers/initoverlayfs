@@ -13,22 +13,24 @@ A scalable solution for initial filesystems focused on minimal resource usage, s
 
 # What is initoverlayfs?
 
-initoverlayfs is a solution that uses transient overlays for an initial filesystem rather than tmpfs. If compression is used, it relies on transparent decompression, rather than upfront decompression. This results in more scalable, maintainable initial filesystems.
+initoverlayfs is a solution that uses transient overlays as an initial filesystem rather than soley an initramfs. If compression is used, it relies on transparent decompression, rather than upfront decompression. This results in more scalable, maintainable initial filesystems.
 
 Here we see a traditional boot sequence:
 
 ```
-fw -> bootloader -> kernel -> initramfs -> rootfs
+fw -> bootloader -> kernel -> initramfs ---------------------------------------> rootfs
 
-fw -> bootloader -> kernel -> init ------------->
+fw -> bootloader -> kernel -> init --------------------------------------------------->
 ```
 
-Here is the boot sequence with initoverlayfs integrated, the mini-initramfs contains just enough to get storage drivers loaded and storage devices initialized. storage-init is a process that is not designed to replace init, it does just enough to initialize storage, switches to initoverlayfs as root and then executes init.
+Here is the boot sequence with initoverlayfs integrated, the mini-initramfs contains just enough to get storage drivers loaded and storage devices initialized. storage-init is a process that is not designed to replace init, it does just enough to initialize storage, switch-root's to initoverlayfs and continues as normal.
 
 ```
-fw -> bootloader -> kernel -> mini-initramfs -> initoverlayfs -> rootfs
+fw -> bootloader -> kernel -> mini-initramfs --------------> initoverlayfs -> rootfs
 
-fw -> bootloader -> kernel -> storage-init   -> init ----------------->
+fw -> bootloader -> kernel -> init ------------------------------------------------>
+                                    |
+                                    `-initoverlayfs-setup-+
 ```
 
 # Why use initoverlayfs?
@@ -43,9 +45,9 @@ Conversely, the initoverlayfs approach proposes a solution: dividing the initram
 
 This division entails segregating the initramfs image into two distinct components.
 
-The first component (initramfs) contains kernel modules, udev-rules and a storage intialization tool, responsible for bringing up the storage device containing initoverlayfs quickly. Subsequently, it mounts and switches to the second component (initoverlayfs), containing all additional kernel modules and essential files required to support the Linux boot process.
+The first component (initramfs) contains init, kernel modules, udev-rules and an initoverlayfs-setup tool, responsible for setting up and mounting initoverlayfs. Then we switches to the second component (initoverlayfs), containing all additional kernel modules and essential files required to support the Linux boot process.
 
-This scalable approach serves to diminish the size of the initramfs image, thus enhancing the speed of the boot process.
+This scalable approach moves a significant portion on the initial filesystem content to initoverlayfs which is more scalable as it does on-demand decompression.
 
 For illustration, consider a comparison of the sizes using dracut versus initoverlayfs:
 
@@ -70,9 +72,9 @@ This is a graphic comparing the boot time effect of increasing initramfs size vs
 
 ![initramfs-vs-initoverlayfs-scale](https://github.com/containers/initoverlayfs/assets/1694275/6f339016-7bcf-4129-af0e-a3f0be7c9be0)
 
-This is a graphic comparing the systemd start time using initramfs only vs using initramfs + initoverlayfs on Raspberry Pi 4 with SD card:
+This is a graphic comparing the systemd start time using initramfs only vs using initramfs + initoverlayfs on Raspberry Pi 4 with NVMe drive over USB:
 
-![initramfs-vs-initoverlayfs](https://github.com/containers/initoverlayfs/assets/1694275/7381a100-9d5a-42ed-b55f-8d303b832a3e)
+![image](https://github.com/containers/initoverlayfs/assets/1694275/f18db634-1c51-4ff7-9c68-423abee0fce4)
 
 # Dependancies
 
@@ -90,7 +92,7 @@ Currently, RPM packages are available through the Copr Packages repository.
 
 ``` bash
 dnf copr enable -y @centos-automotive-sig/next
-dnf install -y initoverlayfs
+dnf install initoverlayfs
 Copr repo for next owned by @centos-automotive-sig  2.4 kB/s | 3.3 kB   00:01
 Dependencies resolved.
 =============================================================================
@@ -120,7 +122,7 @@ initoverlayfs-0.96-1.fc39.x86_64
 centos-stream-9 requires package from epel-release
 
 ```
-dnf install -y  epel-release
+dnf install -y epel-release
 ```
 
 ### Step 2 - Run initoverlayfs-install
@@ -188,20 +190,22 @@ To load the new generated **initramfs and initoverlayfs** images a reboot of the
 
 ### Step 4 - Validating the boot
 
-To validate whether the new image has been successfully loaded after the reboot, you can execute the following journalctl command and search for the keyword storage-init:
+To validate whether the new image has been successfully loaded after the reboot, you can execute the following journalctl command and search for the keyword initoverlayfs:
 
 ``` bash
-# journalctl -r |  grep -i storage-init
-Oct 25 00:20:53 dell730.medogz.com storage-init: mount("/proc", "/initoverlayfs/proc", NULL, MS_MOVE, NULL)
-Oct 25 00:20:53 dell730.medogz.com storage-init: (stat("/initoverlayfs/proc", 0x7ffe85ccaa10) == 0) && 16 != 18)
-Oct 25 00:20:53 dell730.medogz.com storage-init: mount("/dev", "/initoverlayfs/dev", NULL, MS_MOVE, NULL)
-Oct 25 00:20:53 dell730.medogz.com storage-init: (stat("/initoverlayfs/dev", 0x7ffe85ccaa10) == 0) && 5 != 18)
-Oct 25 00:20:53 dell730.medogz.com storage-init: mount("/boot", "/initoverlayfs/boot", "ext4", MS_MOVE, NULL) 2 (No such file or directory)
-Oct 25 00:20:53 dell730.medogz.com storage-init: forked 368 fork_execlp
-Oct 25 00:20:53 dell730.medogz.com storage-init: fork_execlp("udevadm")
-Oct 25 00:20:53 dell730.medogz.com storage-init: forked 357 fork_execvp_no_wait
-Oct 25 00:20:53 dell730.medogz.com storage-init: fork_execvp_no_wait(0x16c4840)
-Oct 25 00:20:53 dell730.medogz.com storage-init: bootfs: {"UUID=b7eaec82-7c35-4887-becf-60ee7889624f", "bootfs UUID=b7eaec82-7c35-4887-becf-60ee7889624f"}, bootfstype: {"ext4", "bootfstype ext4"}, fs: {"(null)", "(null)"}, fstype: {"(null)", "(null)"}, udev_trigger: {"udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme", "udev_trigger udevadm trigger --type=devices --action=add --subsystem-match=module --subsystem-match=block --subsystem-match=virtio --subsystem-match=pci --subsystem-match=nvme"}
+# journalctl -b -o short-monotonic | grep -i initoverlayfs
+[    4.949129] fedora systemd[1]: Queued start job for default target pre-initoverlayfs.target.
+[    5.526459] fedora systemd[1]: Starting pre-initoverlayfs.service - pre-initoverlayfs initialization...
+[    9.179469] fedora initoverlayfs-setup[193]: bootfs: {"UUID=1a3a6db4-a7c2-43e5-bed5-9385f26c68ff", "bootfs UUID=1a3a6db4-a7c2-43e5-bed5-9385f26c68ff"}, bootfstype: {"ext4", "bootfstype ext4"}, fs: {"(null)", "(null)"}, fstype: {"(null)", "(null)"}
+[    9.179469] fedora initoverlayfs-setup[193]: fork_execlp("udevadm")
+[    9.179469] fedora initoverlayfs-setup[193]: forked 199 fork_execlp
+[    9.179469] fedora initoverlayfs-setup[193]: mount("/boot", "/initoverlayfs/boot", "ext4", MS_MOVE, NULL) 2 (No such file or directory)
+[    9.216158] fedora systemd[1]: Finished pre-initoverlayfs.service - pre-initoverlayfs initialization.
+[    9.235546] fedora systemd[1]: Starting pre-initoverlayfs-switch-root.service - Switch Root pre-initoverlayfs...
+[   12.207906] fedora systemd[1]: pre-initoverlayfs-switch-root.service: Deactivated successfully.
+[   12.232609] fedora systemd[1]: Stopped pre-initoverlayfs-switch-root.service.
+[   12.375125] fedora systemd[1]: pre-initoverlayfs.service: Deactivated successfully.
+[   12.393613] fedora systemd[1]: Stopped pre-initoverlayfs.service.
 ```
 
 That's fantastic news! The system is up and running smoothly.
