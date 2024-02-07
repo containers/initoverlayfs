@@ -296,32 +296,6 @@ static inline size_t double_array(char*** ptr, size_t size) {
   return size;
 }
 
-static inline char** cmd_to_argv(char* cmd) {
-  if (!cmd)
-    return 0;
-
-  size_t size = 16;
-  char** argv = (char**)malloc(size * sizeof(char*));
-  if (!argv)
-    return argv;
-
-  size_t i = 0;
-  static const char* delim = " \f\n\r\t\v";
-  for (char* token = strtok(cmd, delim); token; token = strtok(NULL, delim)) {
-    if (i >= size) {
-      size = double_array(&argv, size);
-      if (!size)
-        return argv;
-    }
-
-    argv[i] = token;
-    ++i;
-  }
-
-  argv[i] = 0;
-  return argv;
-}
-
 void wait_mount_bootfs(const conf* c) {
   fork_execlp("udevadm", "wait", c->bootfs.val->c_str);
 
