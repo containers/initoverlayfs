@@ -21,7 +21,7 @@ function release(){
 
     if [ $IS_RELEASE = false ]; then
         # Used for nightly builds
-        RELEASE="0.$(date +%04Y%02m%02d%02H%02M).git$(git rev-parse --short ${GITHUB_SHA:-HEAD})"
+        RELEASE="2.$(date +%04Y%02m%02d%02H%02M).git$(git rev-parse --short ${GITHUB_SHA:-HEAD})"
     fi
     echo $RELEASE
 }
