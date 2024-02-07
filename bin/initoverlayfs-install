@@ -162,8 +162,8 @@ if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CO
   printf "%s\n%s\n%s\n%s\n%s\n%s\n" \
          "bootfs $boot_partition" \
          "bootfstype ext4" \
-         "initoverlayfs_builder dracut -H -f -v -M --reproducible -o \"initoverlayfs\"" \
-         "initrd_builder dracut -H -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
+         "initoverlayfs_builder dracut -N -f -v -M --reproducible -o \"initoverlayfs\"" \
+         "initrd_builder dracut -N -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
 
   erofs_compression_supported="true"
   # shellcheck disable=SC2034
