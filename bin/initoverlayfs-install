@@ -184,11 +184,11 @@ fi
 
 erofs_compression=$(sed -ne "s/^erofs_compression\s//pg" "$INITOVERLAYFS_CONF")
 initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initoverlayfs_builder"
+/bin/bash -c "$initoverlayfs_builder --kver $kver"
 
 detect_initramfs
 extract_initrd_into_initoverlayfs
 
 initrd_builder=$(sed -ne "s/^initrd_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initrd_builder"
+/bin/bash -c "$initrd_builder --kver $kver"
 
