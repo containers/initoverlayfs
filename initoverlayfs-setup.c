@@ -286,17 +286,7 @@ static inline void mounts(const conf* c) {
         c->bootfstype.val->c_str, errno, strerror(errno));
 }
 
-static inline size_t double_array(char*** ptr, size_t size) {
-  size *= 2;
-  char** tmp_ptr = (char**)realloc(*ptr, size * sizeof(char*));
-  if (!tmp_ptr)
-    return 0;
-
-  *ptr = tmp_ptr;
-  return size;
-}
-
-void wait_mount_bootfs(const conf* c) {
+static void wait_mount_bootfs(const conf* c) {
   fork_execlp("udevadm", "wait", c->bootfs.val->c_str);
 
   errno = 0;
