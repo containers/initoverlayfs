@@ -115,14 +115,16 @@ extract_initrd_into_initoverlayfs() {
 
 # main()
 
+args="$*"
 while [[ $# -gt 0 ]]; do
+  echo "$1"
   case $1 in
     --kver)
       kver="$2"
       shift 2
       ;;
     *)
-      break;
+      shift 1
       ;;
   esac
 done
@@ -169,11 +171,11 @@ fi
 
 erofs_compression=$(sed -ne "s/^erofs_compression\s//pg" "$INITOVERLAYFS_CONF")
 initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initoverlayfs_builder $*"
+/bin/bash -c "$initoverlayfs_builder $args"
 
 detect_initramfs
 extract_initrd_into_initoverlayfs
 
 initrd_builder=$(sed -ne "s/^initrd_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initrd_builder $*"
+/bin/bash -c "$initrd_builder $args"
 

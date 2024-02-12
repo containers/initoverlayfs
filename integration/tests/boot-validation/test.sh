@@ -22,7 +22,7 @@ if [ -z "${RPM_EXIST}" ]; then
 fi
 
 echo -n "Install initoverlayfs"
-/usr/bin/initoverlayfs-install
+/usr/bin/initoverlayfs-install -f
 
 exit_code="$?"
 

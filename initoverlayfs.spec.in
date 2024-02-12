@@ -44,7 +44,7 @@ install -D -m644 lib/systemd/system/pre-initoverlayfs-switch-root.service ${RPM_
 %{_prefix}/lib/systemd/system/pre-initoverlayfs-switch-root.service
 
 %changelog
-* Wed Feb 11 2024 Eric Curtin <ecurtin@redhat.com> - 0.992-1
+* Mon Feb 12 2024 Eric Curtin <ecurtin@redhat.com> - 0.992-1
 - Update to 0.992 release.
 - Automatically rebuild kernel on upgrade (ecurtin)
 - Build initrd in no-hostonly mode for generic initrd (ecurtin)
