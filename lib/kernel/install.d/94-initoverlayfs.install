@@ -5,7 +5,7 @@ KERNEL_VERSION="$2"
 
 case "$COMMAND" in
     add)
-        initoverlayfs-install --kver "$KERNEL_VERSION"
+        initoverlayfs-install -f --kver "$KERNEL_VERSION"
         ;;
     remove)
         rm -f /boot/initoverlayfs-$KERNEL_VERSION

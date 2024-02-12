@@ -59,42 +59,30 @@ exec_ext4() {
 }
 
 detect_initramfs() {
-    mkdir -p "${INITRAMFS_DUMP_DIR}"
+  mkdir -p "${INITRAMFS_DUMP_DIR}"
 
-    echo "Extracting initrd into initoverlayfs..."
+  echo "Extracting initrd into initoverlayfs..."
 
-    file_path="${INITRAMFS_DIR}/initramfs-$kver.img"
-    bin="$($SKIPCPIO_BIN "$file_path" | { read -r -N 6 bin && echo "$bin"; })"
-    case $bin in
-        $'\x1f\x8b'*)
-            CAT="zcat"
-            ;;
-        BZh*)
-            CAT="bzcat"
-            ;;
-        $'\x71\xc7'* | 070701)
-            CAT="cat"
-            ;;
-        $'\x02\x21'*)
-            CAT="lz4 -d -c"
-            ;;
-        $'\x89'LZO$'\0'*)
-            CAT="lzop -d -c"
-            ;;
-        $'\x28\xB5\x2F\xFD'*)
-            CAT="zstd -d -c"
-            ;;
-        *)
-            if echo "test" | xz | xzcat --single-stream > /dev/null 2>&1; then
-                CAT="xzcat --single-stream"
-            else
-                CAT="xzcat"
-            fi
-            ;;
-    esac
+  file_path="${INITRAMFS_DIR}/initramfs-$kver.img"
+  skipcpio="/usr/lib/dracut/skipcpio"
+  if $skipcpio $file_path | gzip -t - >/dev/null 2>&1; then
+    CAT="zcat"
+  elif $skipcpio $file_path | zstd -q -c -t - >/dev/null 2>&1; then
+    CAT="zstd"
+  elif $skipcpio $file_path | xzcat -t - >/dev/null 2>&1; then
+    CAT="xzcat"
+  elif $skipcpio $file_path | lz4cat -t - >/dev/null 2>&1; then
+    CAT="lz4cat"
+  elif $skipcpio $file_path | bzip2 -t - >/dev/null 2>&1; then
+    CAT="bzcat"
+  elif $skipcpio $file_path | lzop -t - >/dev/null 2>&1; then
+    CAT="lzop"
+  else
+    CAT="cat"
+  fi
 
-    echo "  - File path: ${file_path}"
-    echo "  - Decompressor: $CAT"
+  echo "  - File path: ${file_path}"
+  echo "  - Decompressor: $CAT"
 }
 
 extract_initrd_into_initoverlayfs() {
@@ -133,10 +121,6 @@ while [[ $# -gt 0 ]]; do
       kver="$2"
       shift 2
       ;;
-    -*)
-      echo "Unknown option $1"
-      exit 1
-      ;;
     *)
       break;
       ;;
@@ -163,8 +147,8 @@ if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CO
   printf "%s\n%s\n%s\n%s\n" \
          "bootfs $boot_partition" \
          "bootfstype ext4" \
-         "initoverlayfs_builder dracut -N -f -v -M --reproducible -o \"initoverlayfs fcoe\"" \
-         "initrd_builder dracut -N -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
+         "initoverlayfs_builder dracut -M -o \"initoverlayfs fcoe\"" \
+         "initrd_builder dracut -M -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
 
   erofs_compression_supported="true"
   # shellcheck disable=SC2034
@@ -185,11 +169,11 @@ fi
 
 erofs_compression=$(sed -ne "s/^erofs_compression\s//pg" "$INITOVERLAYFS_CONF")
 initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initoverlayfs_builder --kver $kver"
+/bin/bash -c "$initoverlayfs_builder $*"
 
 detect_initramfs
 extract_initrd_into_initoverlayfs
 
 initrd_builder=$(sed -ne "s/^initrd_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initrd_builder --kver $kver"
+/bin/bash -c "$initrd_builder $*"
 

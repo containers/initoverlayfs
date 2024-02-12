@@ -60,7 +60,7 @@ For illustration, consider a comparison of the sizes using dracut versus initove
 
 **Using dracut + initoverlayfs**:
 ``` bash
-# /usr/bin/initoverlayfs-install
+# /usr/bin/initoverlayfs-install -f
 # du -sh /boot/initramfs-6.5.5-300.fc39.x86_64.img
 13M	/boot/initramfs-6.5.5-300.fc39.x86_64.img
 ^^ <--- from 36M to 13M
@@ -129,7 +129,7 @@ dnf install -y epel-release
 Once the deployment is completed, the next step is to execute the /usr/bin/initoverlayfs-install tool. This tool is responsible for generating both the initramfs and initoverlayfs images, along with the essential initoverlayfs.conf configuration.
 
 ``` bash
-# /usr/bin/initoverlayfs-install
+# /usr/bin/initoverlayfs-install -f
 <SNIP>
 initoverlayfs
 kernel-modules
