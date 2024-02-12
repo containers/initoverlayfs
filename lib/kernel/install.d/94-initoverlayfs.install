@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+
+COMMAND="$1"
+KERNEL_VERSION="$2"
+
+case "$COMMAND" in
+    add)
+        initoverlayfs-install -f --kver "$KERNEL_VERSION"
+        ;;
+    remove)
+        rm -f /boot/initoverlayfs-$KERNEL_VERSION
+        ;;
+    *)
+        exit 0
+esac
+
