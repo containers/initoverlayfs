@@ -27,8 +27,8 @@ detect_path_initramfs() {
 
     done
 
-    echo "Cannot detect initramfs path, aborting..."
-    exit 1
+    # on first build, like in osbuild, there will be no prior initrd to detect
+    INITRAMFS_DIR="/boot"
 }
 
 exec_erofs() {
