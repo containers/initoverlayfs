@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "initoverlayfs-setup.h"
+#include "initoverlayfs.h"
 #include <assert.h>
 #include <dirent.h>
 #include <err.h>

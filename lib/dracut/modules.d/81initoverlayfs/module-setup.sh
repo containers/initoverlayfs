@@ -10,7 +10,7 @@ depends() {
 }
 
 install() {
-    inst_multiple -o /etc/initoverlayfs.conf /usr/sbin/initoverlayfs-setup \
+    inst_multiple -o /etc/initoverlayfs.conf /usr/sbin/initoverlayfs \
       "$systemdsystemunitdir/pre-initoverlayfs.target" \
       "$systemdsystemunitdir/pre-initoverlayfs.service" \
       "$systemdsystemunitdir/pre-initoverlayfs-switch-root.service"

@@ -30,7 +30,7 @@ fw -> bootloader -> kernel -> mini-initramfs --------------> initoverlayfs -> ro
 
 fw -> bootloader -> kernel -> init ------------------------------------------------>
                                     |
-                                    `-initoverlayfs-setup-+
+                                    `-initoverlayfs-+
 ```
 
 # Why use initoverlayfs?
@@ -45,7 +45,7 @@ Conversely, the initoverlayfs approach proposes a solution: dividing the initram
 
 This division entails segregating the initramfs image into two distinct components.
 
-The first component (initramfs) contains init, kernel modules, udev-rules and an initoverlayfs-setup tool, responsible for setting up and mounting initoverlayfs. Then we switches to the second component (initoverlayfs), containing all additional kernel modules and essential files required to support the Linux boot process.
+The first component (initramfs) contains init, kernel modules, udev-rules and an initoverlayfs tool, responsible for setting up and mounting initoverlayfs. Then we switches to the second component (initoverlayfs), containing all additional kernel modules and essential files required to support the Linux boot process.
 
 This scalable approach moves a significant portion on the initial filesystem content to initoverlayfs which is more scalable as it does on-demand decompression.
 
@@ -196,10 +196,10 @@ To validate whether the new image has been successfully loaded after the reboot,
 # journalctl -b -o short-monotonic | grep -i initoverlayfs
 [    4.949129] fedora systemd[1]: Queued start job for default target pre-initoverlayfs.target.
 [    5.526459] fedora systemd[1]: Starting pre-initoverlayfs.service - pre-initoverlayfs initialization...
-[    9.179469] fedora initoverlayfs-setup[193]: bootfs: {"UUID=1a3a6db4-a7c2-43e5-bed5-9385f26c68ff", "bootfs UUID=1a3a6db4-a7c2-43e5-bed5-9385f26c68ff"}, bootfstype: {"ext4", "bootfstype ext4"}, fs: {"(null)", "(null)"}, fstype: {"(null)", "(null)"}
-[    9.179469] fedora initoverlayfs-setup[193]: fork_execlp("udevadm")
-[    9.179469] fedora initoverlayfs-setup[193]: forked 199 fork_execlp
-[    9.179469] fedora initoverlayfs-setup[193]: mount("/boot", "/initoverlayfs/boot", "ext4", MS_MOVE, NULL) 2 (No such file or directory)
+[    9.179469] fedora initoverlayfs[193]: bootfs: {"UUID=1a3a6db4-a7c2-43e5-bed5-9385f26c68ff", "bootfs UUID=1a3a6db4-a7c2-43e5-bed5-9385f26c68ff"}, bootfstype: {"ext4", "bootfstype ext4"}, fs: {"(null)", "(null)"}, fstype: {"(null)", "(null)"}
+[    9.179469] fedora initoverlayfs[193]: fork_execlp("udevadm")
+[    9.179469] fedora initoverlayfs[193]: forked 199 fork_execlp
+[    9.179469] fedora initoverlayfs[193]: mount("/boot", "/initoverlayfs/boot", "ext4", MS_MOVE, NULL) 2 (No such file or directory)
 [    9.216158] fedora systemd[1]: Finished pre-initoverlayfs.service - pre-initoverlayfs initialization.
 [    9.235546] fedora systemd[1]: Starting pre-initoverlayfs-switch-root.service - Switch Root pre-initoverlayfs...
 [   12.207906] fedora systemd[1]: pre-initoverlayfs-switch-root.service: Deactivated successfully.
