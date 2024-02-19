@@ -4,10 +4,10 @@ set -x
 
 if [ "${TMT_REBOOT_COUNT}" == "1" ];then
    echo -n "machine is up"
-   storage_init=$(journalctl -r | grep "init -> usr/sbin/initoverlayfs-setup" | tail -1)
+   storage_init=$(journalctl -r | grep "init -> usr/sbin/initoverlayfs" | tail -1)
    exit_code="$?"
    if [ "$exit_code" != "0" ]; then
-      echo -n "initoverlayfs,  initoverlayfs-setup messages not found in journal"
+      echo -n "initoverlayfs,  initoverlayfs messages not found in journal"
       exit "$exit_code"
    fi 
    echo -n "initoverlayfs boot complete"
