@@ -27,8 +27,8 @@ detect_path_initramfs() {
 
     done
 
-    # on first build, like in osbuild, there will be no prior initrd to detect
-    INITRAMFS_DIR="/boot"
+    echo "Cannot detect initramfs path, aborting..."
+    exit 1
 }
 
 exec_erofs() {
@@ -37,6 +37,30 @@ exec_erofs() {
     popd
     rm -f "${INITRAMFS_DIR}/initoverlayfs-$kver.img"
     mkfs.erofs $erofs_compression "${INITRAMFS_DIR}/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
+
+	generate_dm_verity_hash "${INITRAMFS_DIR}/initoverlayfs-$kver.img" "${INITRAMFS_DIR}/verity_table.img" $INITOVERLAYFS_CONF
+	if journalctl -b -o short-monotonic | grep -qi "dm-verity setup for initoverlayfs complete"; then
+		echo "Confirmation: dm-verity setup completed successfully."
+ 		rm -f verity_output.txt
+	else
+		echo"Warning: dm-verity error"
+		journalctl -t initoverlayfs-setup -n 10 --no-pager
+	fi
+}
+
+generate_dm_verity_hash() {
+	local image_path="$1"
+	local hash_table_path="$2"
+	local conf_path="$3"
+
+	# Generate dm-verity hash for the EROFS image
+	veritysetup format "$image_path" "$hash_table_path" &> verity_output.log
+	# Extract root hash and save it to the file
+	local verity_root_hash=$(grep 'Root hash:' verity_output.log | awk '{print $3}')
+	echo "root_hash=$verity_root_hash" >> "$conf_path"
+	# remove tempfile
+	echo "dm-verity setup complete" | systemd-cat -t initoverlayfs-setup
+	# rm -f verity_output.txt
 }
 
 # Support for ext4 is currently under development.
@@ -59,30 +83,42 @@ exec_ext4() {
 }
 
 detect_initramfs() {
-  mkdir -p "${INITRAMFS_DUMP_DIR}"
+    mkdir -p "${INITRAMFS_DUMP_DIR}"
 
-  echo "Extracting initrd into initoverlayfs..."
+    echo "Extracting initrd into initoverlayfs..."
 
-  file_path="${INITRAMFS_DIR}/initramfs-$kver.img"
-  skipcpio="/usr/lib/dracut/skipcpio"
-  if $skipcpio $file_path | gzip -t - >/dev/null 2>&1; then
-    CAT="zcat"
-  elif $skipcpio $file_path | zstd -q -c -t - >/dev/null 2>&1; then
-    CAT="zstd"
-  elif $skipcpio $file_path | xzcat -t - >/dev/null 2>&1; then
-    CAT="xzcat"
-  elif $skipcpio $file_path | lz4cat -t - >/dev/null 2>&1; then
-    CAT="lz4cat"
-  elif $skipcpio $file_path | bzip2 -t - >/dev/null 2>&1; then
-    CAT="bzcat"
-  elif $skipcpio $file_path | lzop -t - >/dev/null 2>&1; then
-    CAT="lzop"
-  else
-    CAT="cat"
-  fi
+    file_path="${INITRAMFS_DIR}/initramfs-$kver.img"
+    bin="$($SKIPCPIO_BIN "$file_path" | { read -r -N 6 bin && echo "$bin"; })"
+    case $bin in
+        $'\x1f\x8b'*)
+            CAT="zcat"
+            ;;
+        BZh*)
+            CAT="bzcat"
+            ;;
+        $'\x71\xc7'* | 070701)
+            CAT="cat"
+            ;;
+        $'\x02\x21'*)
+            CAT="lz4 -d -c"
+            ;;
+        $'\x89'LZO$'\0'*)
+            CAT="lzop -d -c"
+            ;;
+        $'\x28\xB5\x2F\xFD'*)
+            CAT="zstd -d -c"
+            ;;
+        *)
+            if echo "test" | xz | xzcat --single-stream > /dev/null 2>&1; then
+                CAT="xzcat --single-stream"
+            else
+                CAT="xzcat"
+            fi
+            ;;
+    esac
 
-  echo "  - File path: ${file_path}"
-  echo "  - Decompressor: $CAT"
+    echo "  - File path: ${file_path}"
+    echo "  - Decompressor: $CAT"
 }
 
 extract_initrd_into_initoverlayfs() {
@@ -115,16 +151,18 @@ extract_initrd_into_initoverlayfs() {
 
 # main()
 
-args="$*"
 while [[ $# -gt 0 ]]; do
-  echo "$1"
   case $1 in
     --kver)
       kver="$2"
       shift 2
       ;;
+    -*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
     *)
-      shift 1
+      break;
       ;;
   esac
 done
@@ -145,12 +183,11 @@ detect_path_initramfs
 
 if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CONF"; then
   boot_partition=$(< /etc/fstab grep "${INITRAMFS_DIR}.*ext4" | awk '{print $1}')
-
-  printf "%s\n%s\n%s\n%s\n" \
+  printf "%s\n%s\n%s\n%s\n%s\n%s\n" \
          "bootfs $boot_partition" \
          "bootfstype ext4" \
-         "initoverlayfs_builder dracut -M -o \"initoverlayfs fcoe\"" \
-         "initrd_builder dracut -M -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
+         "initoverlayfs_builder dracut -N -f -v -M --reproducible -o \"initoverlayfs\"" \
+         "initrd_builder dracut -N -f -v -M --reproducible -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
 
   erofs_compression_supported="true"
   # shellcheck disable=SC2034
@@ -171,11 +208,11 @@ fi
 
 erofs_compression=$(sed -ne "s/^erofs_compression\s//pg" "$INITOVERLAYFS_CONF")
 initoverlayfs_builder=$(sed -ne "s/^initoverlayfs_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initoverlayfs_builder $args"
+/bin/bash -c "$initoverlayfs_builder"
 
 detect_initramfs
 extract_initrd_into_initoverlayfs
 
 initrd_builder=$(sed -ne "s/^initrd_builder\s//pg" "$INITOVERLAYFS_CONF")
-/bin/bash -c "$initrd_builder $args"
+/bin/bash -c "$initrd_builder"
 
