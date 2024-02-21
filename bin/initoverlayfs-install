@@ -37,6 +37,9 @@ exec_erofs() {
     popd
     rm -f "${INITRAMFS_DIR}/initoverlayfs-$kver.img"
     mkfs.erofs $erofs_compression "${INITRAMFS_DIR}/initoverlayfs-$kver.img" ${INITRAMFS_DUMP_DIR}
+    if false; then
+        veritysetup format "${INITRAMFS_DIR}/initoverlayfs-$kver.img" "/etc/initoverlayfs-hash-$kver.img"
+    fi
 }
 
 # Support for ext4 is currently under development.
