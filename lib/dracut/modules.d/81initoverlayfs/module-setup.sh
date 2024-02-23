@@ -4,11 +4,6 @@ installkernel() {
     hostonly="" instmods erofs overlay loop
 }
 
-# called by dracut
-depends() {
-    echo "systemd"
-}
-
 install() {
   INITOVERLAYFS_CONF="/etc/initoverlayfs.conf"
   INITOVERLAYFS_INIT=$(sed -ne "s/^initoverlayfs_init\s//pg" "$INITOVERLAYFS_CONF")
