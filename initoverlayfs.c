@@ -342,10 +342,14 @@ int main(int argc, char* argv[]) {
   if (!systemd) {
     mount_proc_sys_dev();
     kmsg_f = kmsg_f_scoped;
+    log_open_kmsg();
   }
 
-  pid_t loop_pid;
-  fork_execl_no_wait(loop_pid, "/usr/sbin/modprobe", "loop");
+  if (systemd) {
+    pid_t loop_pid;
+    fork_execl_no_wait(loop_pid, "/usr/sbin/modprobe", "loop");
+  }
+
   autofree_conf conf conf = {
       .bootfs = {0, 0}, .bootfstype = {0, 0}, .fs = {0, 0}, .fstype = {0, 0}};
   if (conf_construct(&conf))
@@ -354,7 +358,9 @@ int main(int argc, char* argv[]) {
   conf_read(&conf, "/etc/initoverlayfs.conf");
   const bool do_bootfs = convert_bootfs(&conf);
   convert_fs(&conf);
-  waitpid(loop_pid, 0, 0);
+  if (systemd)
+    waitpid(loop_pid, 0, 0);
+
   if (do_bootfs)
     wait_mount_bootfs(&conf);
 
