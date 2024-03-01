@@ -269,21 +269,17 @@ static inline void mounts(const conf* c) {
         "%d (%s)\n",
         dev_loop, c->fstype.val->c_str, errno, strerror(errno));
 
-  if (mount("overlay", SYSROOT, "overlay", 0,
-            "volatile," OVERLAY_STR) &&
-      errno == EINVAL &&
-      mount("overlay", SYSROOT, "overlay", 0, OVERLAY_STR))
-    print(
-        "mount(\"overlay\", \"" SYSROOT "\", \"overlay\", 0, \"" OVERLAY_STR
-        "\") %d (%s)\n",
-        errno, strerror(errno));
+  if (mount("overlay", SYSROOT, "overlay", 0, "volatile," OVERLAY_STR) &&
+      errno == EINVAL && mount("overlay", SYSROOT, "overlay", 0, OVERLAY_STR))
+    print("mount(\"overlay\", \"" SYSROOT "\", \"overlay\", 0, \"" OVERLAY_STR
+          "\") %d (%s)\n",
+          errno, strerror(errno));
 
-  if (mount("/boot", SYSROOT "/boot", c->bootfstype.val->c_str, MS_MOVE,
-            NULL))
-    print(
-        "mount(\"/boot\", \"" SYSROOT "/boot\", \"%s\", MS_MOVE, NULL) "
-        "%d (%s)\n",
-        c->bootfstype.val->c_str, errno, strerror(errno));
+  if (mount("/boot", SYSROOT "/boot", c->bootfstype.val->c_str, MS_MOVE, NULL))
+    print("mount(\"/boot\", \"" SYSROOT
+          "/boot\", \"%s\", MS_MOVE, NULL) "
+          "%d (%s)\n",
+          c->bootfstype.val->c_str, errno, strerror(errno));
 }
 
 static void wait_mount_bootfs(const conf* c) {
@@ -297,13 +293,61 @@ static void wait_mount_bootfs(const conf* c) {
         c->bootfs.val->c_str, c->bootfstype.val->c_str, errno, strerror(errno));
 }
 
-int main(void) {
+static inline int mount_proc_sys_dev(void) {
+  if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
+    print(
+        "mount(\"proc\", \"/proc\", \"proc\", MS_NOSUID | MS_NOEXEC | "
+        "MS_NODEV, NULL) %d (%s)\n",
+        errno, strerror(errno));
+    return errno;
+  }
+
+  if (mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL)) {
+    print(
+        "mount(\"sysfs\", \"/sys\", \"sysfs\", MS_NOSUID | MS_NOEXEC | "
+        "MS_NODEV, NULL) %d (%s)\n",
+        errno, strerror(errno));
+    return errno;
+  }
+
+  if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID | MS_STRICTATIME,
+            "mode=0755,size=4m")) {
+    print(
+        "mount(\"devtmpfs\", \"/dev\", \"devtmpfs\", MS_NOSUID | "
+        "MS_STRICTATIME, \"mode=0755,size=4m\") %d (%s)\n",
+        errno, strerror(errno));
+    return errno;
+  }
+
+  return 0;
+}
+
+static inline FILE* log_open_kmsg(void) {
+  kmsg_f = fopen("/dev/kmsg", "w");
+  if (!kmsg_f) {
+    print("open(\"/dev/kmsg\", \"w\"), %d = errno\n", errno);
+    return kmsg_f;
+  }
+
+  setvbuf(kmsg_f, 0, _IOLBF, 0);
+  return kmsg_f;
+}
+
+int main(int argc, char* argv[]) {
+  bool systemd = false;
+  if (argc > 1)
+    systemd = true;
+
+  autofclose FILE* kmsg_f_scoped = NULL;
+  if (!systemd) {
+    mount_proc_sys_dev();
+    kmsg_f = kmsg_f_scoped;
+  }
+
   pid_t loop_pid;
   fork_execl_no_wait(loop_pid, "/usr/sbin/modprobe", "loop");
-  autofree_conf conf conf = {.bootfs = {0, 0},
-                             .bootfstype = {0, 0},
-                             .fs = {0, 0},
-                             .fstype = {0, 0}};
+  autofree_conf conf conf = {
+      .bootfs = {0, 0}, .bootfstype = {0, 0}, .fs = {0, 0}, .fstype = {0, 0}};
   if (conf_construct(&conf))
     return 0;
 

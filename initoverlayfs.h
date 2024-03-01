@@ -28,6 +28,11 @@
 
 #define print(...)                                   \
   do {                                               \
+    if (kmsg_f) {                                    \
+      fprintf(kmsg_f, "storage-init: " __VA_ARGS__); \
+      break;                                         \
+    }                                                \
+                                                     \
     printf(__VA_ARGS__);                             \
   } while (0)
 
@@ -40,6 +45,8 @@
 #else
 #define printd(...)
 #endif
+
+static FILE* kmsg_f = 0;
 
 typedef struct str {
   char* c_str;
