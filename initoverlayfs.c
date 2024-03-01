@@ -345,8 +345,8 @@ int main(int argc, char* argv[]) {
     log_open_kmsg();
   }
 
+  pid_t loop_pid;
   if (systemd) {
-    pid_t loop_pid;
     fork_execl_no_wait(loop_pid, "/usr/sbin/modprobe", "loop");
   }
 
