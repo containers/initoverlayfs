@@ -232,6 +232,8 @@ static inline bool convert_bootfs(conf* c, const bool systemd) {
   swap(c->bootfs.scoped->c_str, bootfs_tmp);
   c->bootfs.val->c_str = c->bootfs.scoped->c_str;
 
+  print("bootfs to mount is '%s'\n", c->bootfstype.val->c_str);
+
   return true;
 }
 

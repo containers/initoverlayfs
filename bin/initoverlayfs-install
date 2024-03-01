@@ -152,7 +152,7 @@ detect_path_initramfs
 if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CONF"; then
   boot_partition=$(< /etc/fstab grep "${INITRAMFS_DIR}.*ext4" | awk '{print $1}')
 
-  printf "%s\n%s\n%s\n%s\n" \
+  printf "%s\n%s\n%s\n%s" \
          "bootfs $boot_partition" \
          "bootfstype ext4" \
          "initoverlayfs_builder dracut -M -o \"initoverlayfs fcoe\"" > $INITOVERLAYFS_CONF
