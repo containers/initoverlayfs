@@ -12,7 +12,7 @@ install() {
     USE_SYSTEMD="false"
   fi
 
-  inst_multiple -o $INITOVERLAYFS_CONF /usr/sbin/initoverlayfs
+  inst_multiple -o $INITOVERLAYFS_CONF /usr/sbin/initoverlayfs /usr/bin/bash
 
   if $USE_SYSTEMD; then
     inst_multiple -o "$systemdsystemunitdir/pre-initoverlayfs.target" \
@@ -26,11 +26,13 @@ install() {
     $SYSTEMCTL -q --root "$initdir" set-default pre-initoverlayfs.target
     $SYSTEMCTL -q --root "$initdir" add-wants sysinit.target pre-initoverlayfs.service
     $SYSTEMCTL -q --root "$initdir" add-wants sysinit.target pre-initoverlayfs-switch-root.service
+    ln_r "/usr/bin/bash" "/usr/sbin/init"
+    ln_r "/usr/bin/bash" "/init"
   else
     ln_r "/usr/sbin/initoverlayfs" "/usr/sbin/init"
     ln_r "/usr/sbin/initoverlayfs" "/init"
   fi
 
-  > "${initdir}/usr/bin/bash"
+#  > "${initdir}/usr/bin/bash"
 }
 
