@@ -12,7 +12,7 @@ install() {
     USE_SYSTEMD="false"
   fi
 
-  inst_multiple -o $INITOVERLAYFS_CONF /usr/sbin/initoverlayfs /usr/bin/bash
+  inst_multiple -o $INITOVERLAYFS_CONF /usr/sbin/initoverlayfs /usr/bin/bash /usr/sbin/blkid
 
   if $USE_SYSTEMD; then
     inst_multiple -o "$systemdsystemunitdir/pre-initoverlayfs.target" \
