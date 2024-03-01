@@ -363,8 +363,8 @@ int main(int argc, char* argv[]) {
   autofclose FILE* kmsg_f_scoped = NULL;
   if (!systemd) {
     mount_proc_sys_dev();
-    kmsg_f = kmsg_f_scoped;
     log_open_kmsg();
+    kmsg_f = kmsg_f_scoped;
   }
 
   pid_t loop_pid;
