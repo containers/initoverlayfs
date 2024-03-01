@@ -4,6 +4,7 @@
 
 #include "initoverlayfs.h"
 #include <assert.h>
+#include <blkid/blkid.h>
 #include <dirent.h>
 #include <err.h>
 #include <errno.h>
@@ -176,7 +177,7 @@ static inline int losetup(char** loopdev, const char* file) {
   return 0;
 }
 
-static inline bool convert_bootfs(conf* c) {
+static inline bool convert_bootfs(conf* c, const bool systemd) {
   if (!c->bootfs.val->c_str) {
     print("c->bootfs.val.c_str pointer is null\n");
     return false;
@@ -187,26 +188,46 @@ static inline bool convert_bootfs(conf* c) {
     return false;
   }
 
-  const char* token = strtok(c->bootfs.val->c_str, "=");
   autofree char* bootfs_tmp = 0;
-  if (!strcmp(token, "PARTLABEL")) {
-    token = strtok(NULL, "=");
-    if (asprintf(&bootfs_tmp, "/dev/disk/by-partlabel/%s", token) < 0)
+  if (systemd) {
+    const char* token = strtok(c->bootfs.val->c_str, "=");
+    if (!strcmp(token, "PARTLABEL")) {
+      token = strtok(NULL, "=");
+      if (asprintf(&bootfs_tmp, "/dev/disk/by-partlabel/%s", token) < 0)
+        return false;
+    } else if (!strcmp(token, "LABEL")) {
+      token = strtok(NULL, "=");
+      if (asprintf(&bootfs_tmp, "/dev/disk/by-label/%s", token) < 0)
+        return false;
+    } else if (!strcmp(token, "UUID")) {
+      token = strtok(NULL, "=");
+      if (asprintf(&bootfs_tmp, "/dev/disk/by-uuid/%s", token) < 0)
+        return false;
+    } else if (!strcmp(token, "PARTUUID")) {
+      token = strtok(NULL, "=");
+      if (asprintf(&bootfs_tmp, "/dev/disk/by-partuuid/%s", token) < 0)
+        return false;
+    } else
       return false;
-  } else if (!strcmp(token, "LABEL")) {
-    token = strtok(NULL, "=");
-    if (asprintf(&bootfs_tmp, "/dev/disk/by-label/%s", token) < 0)
+  } else {
+    blkid_cache cache;
+
+    const char* read = NULL;
+
+    // Open the cache
+    blkid_get_cache(&cache, read);
+    blkid_probe_all(cache);
+
+    const char* type = strtok(c->bootfs.val->c_str, "=");
+    const char* value = strtok(NULL, "=");
+
+    if (asprintf(
+            &bootfs_tmp, "%s",
+            blkid_dev_devname(blkid_find_dev_with_tag(cache, type, value))) < 0)
       return false;
-  } else if (!strcmp(token, "UUID")) {
-    token = strtok(NULL, "=");
-    if (asprintf(&bootfs_tmp, "/dev/disk/by-uuid/%s", token) < 0)
-      return false;
-  } else if (!strcmp(token, "PARTUUID")) {
-    token = strtok(NULL, "=");
-    if (asprintf(&bootfs_tmp, "/dev/disk/by-partuuid/%s", token) < 0)
-      return false;
-  } else
-    return false;
+
+    blkid_put_cache(cache);
+  }
 
   swap(c->bootfs.scoped->c_str, bootfs_tmp);
   c->bootfs.val->c_str = c->bootfs.scoped->c_str;
@@ -334,6 +355,7 @@ static inline FILE* log_open_kmsg(void) {
 }
 
 int main(int argc, char* argv[]) {
+  (void)argv;
   bool systemd = false;
   if (argc > 1)
     systemd = true;
@@ -356,7 +378,7 @@ int main(int argc, char* argv[]) {
     return 0;
 
   conf_read(&conf, "/etc/initoverlayfs.conf");
-  const bool do_bootfs = convert_bootfs(&conf);
+  const bool do_bootfs = convert_bootfs(&conf, systemd);
   convert_fs(&conf);
   if (systemd)
     waitpid(loop_pid, 0, 0);
