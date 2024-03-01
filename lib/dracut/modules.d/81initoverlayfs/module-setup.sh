@@ -28,6 +28,7 @@ install() {
     $SYSTEMCTL -q --root "$initdir" add-wants sysinit.target pre-initoverlayfs-switch-root.service
   else
     ln_r "/usr/sbin/initoverlayfs" "/usr/sbin/init"
+    ln_r "/usr/sbin/initoverlayfs" "/init"
   fi
 
   > "${initdir}/usr/bin/bash"
