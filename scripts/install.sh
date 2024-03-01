@@ -12,5 +12,5 @@ if rpm -Uvh "$rpm_to_install"; then
   echo "$rpmbuild_output"
 fi
 
-initoverlayfs-install $1
+initoverlayfs-install -f $1
 
