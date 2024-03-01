@@ -158,7 +158,7 @@ if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CO
          "initoverlayfs_builder dracut -M -o \"initoverlayfs fcoe\"" > $INITOVERLAYFS_CONF
 
   if $initoverlayfs_init; then
-    printf "%s\n" "initrd_builder dracut -M -m \"kernel-modules udev-rules initoverlayfs\" -o \"kernel-modules udev-rules systemd base bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" >> $INITOVERLAYFS_CONF
+    printf "%s\n" "initrd_builder dracut -M -m \"kernel-modules initoverlayfs\" -o \"kernel-modules udev-rules systemd base bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" >> $INITOVERLAYFS_CONF
   else
     printf "%s\n" "initrd_builder dracut -M -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" >> $INITOVERLAYFS_CONF
   fi
