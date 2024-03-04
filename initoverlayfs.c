@@ -593,7 +593,7 @@ int main(int argc, char* argv[]) {
   autofclose FILE* kmsg_f_scoped = NULL;
   if (!systemd) {
     mount_proc_sys_dev();
-    execl_single_arg("/usr/bin/bash");
+//    execl_single_arg("/usr/bin/bash");
     log_open_kmsg();
     kmsg_f = kmsg_f_scoped;
   }
