@@ -227,16 +227,6 @@ static bool convert_bootfs(conf* c, const bool systemd) {
       const char* value = strtok(NULL, "=");
 
       const blkid_dev b_dev = blkid_find_dev_with_tag(cache, type, value);
-      if (!b_dev) {
-        blkid_put_cache(cache);
-
-        print("bootfs_tmp: '%s'\n", bootfs_tmp);
-
-        usleep(1000);
-
-        continue;
-      }
-
       if (asprintf(&bootfs_tmp, "%s", blkid_dev_devname(b_dev)) < 0)
         return false;
 
