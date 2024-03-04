@@ -210,7 +210,7 @@ static bool convert_bootfs(conf* c, const bool systemd) {
     } else
       return false;
   } else {
-    for (int i = 0; !bootfs_tmp && i < 4000; usleep(1000)) {
+    for (int i = 0; !bootfs_tmp && i < 4000; ++i) {
       print("blkid_cache cache\n");
       blkid_cache cache;
 
@@ -232,6 +232,10 @@ static bool convert_bootfs(conf* c, const bool systemd) {
         return false;
 
       blkid_put_cache(cache);
+
+      print("bootfs_tmp: '%s'\n", bootfs_tmp);
+
+      usleep(1000);
     }
   }
 
