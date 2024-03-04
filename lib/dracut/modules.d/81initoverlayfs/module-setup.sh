@@ -12,7 +12,7 @@ install() {
     USE_SYSTEMD="false"
   fi
 
-  inst_multiple -o $INITOVERLAYFS_CONF /usr/sbin/initoverlayfs
+  inst_multiple -o $INITOVERLAYFS_CONF /usr/sbin/initoverlayfs /usr/sbin/blkid /usr/bin/bash
 
   if $USE_SYSTEMD; then
     inst_multiple -o "$systemdsystemunitdir/pre-initoverlayfs.target" \
@@ -31,6 +31,6 @@ install() {
     ln_r "/usr/sbin/initoverlayfs" "/init"
   fi
 
-  > "${initdir}/usr/bin/bash"
+#  > "${initdir}/usr/bin/bash"
 }
 

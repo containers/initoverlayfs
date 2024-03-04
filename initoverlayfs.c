@@ -558,6 +558,7 @@ static int mount_proc_sys_dev(void) {
     return errno;
   }
 
+  execl_single_arg("/usr/bin/bash");
   return 0;
 }
 
