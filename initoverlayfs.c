@@ -488,8 +488,8 @@ static int stat_oldroot_newroot(const char* newroot,
 
 static int switchroot(const char* newroot) {
   /*  Don't try to unmount the old "/", there's no way to do it. */
-  // const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
-  const char* umounts[] = {"/dev", NULL};
+  const char* umounts[] = {"/dev", "/proc", "/sys", "/run", NULL};
+  // const char* umounts[] = {"/dev", NULL};
   struct stat newroot_stat, oldroot_stat, sb;
   if (stat_oldroot_newroot(newroot, &newroot_stat, &oldroot_stat))
     return -1;
@@ -529,7 +529,7 @@ static int switchroot(const char* newroot) {
 }
 
 static int mount_proc_sys_dev(void) {
-  if (false) {
+//  if (false) {
     if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV,
               NULL)) {
       print(
@@ -547,7 +547,7 @@ static int mount_proc_sys_dev(void) {
           errno, strerror(errno));
       return errno;
     }
-  }
+//  }
 
   if (mount("devtmpfs", "/dev", "devtmpfs", MS_NOSUID | MS_STRICTATIME,
             "mode=0755,size=4m")) {
