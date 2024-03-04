@@ -211,6 +211,7 @@ static bool convert_bootfs(conf* c, const bool systemd) {
       return false;
   } else {
     for (int i = 0; !bootfs_tmp && i < 4000; usleep(1000)) {
+      print("blkid_cache cache\n");
       blkid_cache cache;
 
       const char* read = NULL;
