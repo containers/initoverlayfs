@@ -210,30 +210,28 @@ static bool convert_bootfs(conf* c, const bool systemd) {
     } else
       return false;
   } else {
-    for (int i = 0; i < 4000; ++i) {
-      print("blkid_cache cache\n");
-      blkid_cache cache;
+    print("blkid_cache cache\n");
+    blkid_cache cache;
 
-      const char* read = NULL;
+    const char* read = NULL;
 
-      // Open the cache
-      if (blkid_get_cache(&cache, read))
-        print("blkid_get_cache(%p, \"%s\")\n", &cache, read ? read : NULL);
+    // Open the cache
+    if (blkid_get_cache(&cache, read))
+      print("blkid_get_cache(%p, \"%s\")\n", &cache, read ? read : NULL);
 
-      if (blkid_probe_all(cache))
-        print("blkid_probe_all(%p)\n", &cache);
+    if (blkid_probe_all(cache))
+      print("blkid_probe_all(%p)\n", &cache);
 
-      const char* type = strtok(c->bootfs.val->c_str, "=");
-      const char* value = strtok(NULL, "=");
+    const char* type = strtok(c->bootfs.val->c_str, "=");
+    const char* value = strtok(NULL, "=");
 
-      const blkid_dev b_dev = blkid_find_dev_with_tag(cache, type, value);
-      if (asprintf(&bootfs_tmp, "%s", blkid_dev_devname(b_dev)) < 0)
-        return false;
+    const blkid_dev b_dev = blkid_find_dev_with_tag(cache, type, value);
+    if (asprintf(&bootfs_tmp, "%s", blkid_dev_devname(b_dev)) < 0)
+      return false;
 
-      blkid_put_cache(cache);
+    blkid_put_cache(cache);
 
-      print("bootfs_tmp: '%s'\n", bootfs_tmp);
-    }
+    print("bootfs_tmp: '%s'\n", bootfs_tmp);
   }
 
   swap(c->bootfs.scoped->c_str, bootfs_tmp);
