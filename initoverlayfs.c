@@ -215,8 +215,11 @@ static bool convert_bootfs(conf* c, const bool systemd) {
     const char* read = NULL;
 
     // Open the cache
-    blkid_get_cache(&cache, read);
-    blkid_probe_all(cache);
+    if (blkid_get_cache(&cache, read))
+      print("blkid_get_cache(%p, \"%s\")\n", &cache, read ? read : NULL);
+
+    if (blkid_probe_all(cache))
+      print("blkid_probe_all(%p)\n", &cache);
 
     const char* type = strtok(c->bootfs.val->c_str, "=");
     const char* value = strtok(NULL, "=");
