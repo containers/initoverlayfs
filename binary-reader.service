@@ -1,0 +1,13 @@
+[Unit]
+Description=Show Twincam Boot
+DefaultDependencies=no
+ConditionVirtualization=!container
+IgnoreOnIsolate=true
+
+[Service]
+ExecStart=/usr/bin/binary-reader /usr/bin/binary
+Type=simple
+RemainAfterExit=yes
+KillMode=mixed
+SendSIGKILL=no
+
