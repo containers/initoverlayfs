@@ -21,7 +21,7 @@ elif [ "$1" = "initrd" ]; then
   rm -f /usr/lib/systemd/system/sysinit.target.wants/binary-reader.service
   mkdir -p /usr/lib/dracut/modules.d/81early-service/
   cp lib/dracut/modules.d/81early-service/module-setup.sh /usr/lib/dracut/modules.d/81early-service/
-  dracut -f
+  dracut -f -o initoverlayfs
 elif [ "$1" = "initoverlayfs" ]; then
   initoverlayfs-install -f --initoverlayfs-init
 fi
