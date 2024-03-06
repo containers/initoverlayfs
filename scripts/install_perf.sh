@@ -16,7 +16,7 @@ if [ "$1" = "rootfs" ]; then
   head -c $2 /dev/urandom > /usr/bin/binary
   cp binary-reader.service /usr/lib/systemd/system/
   gcc -O3 read.c -o /usr/bin/binary-reader
-  systemctl enable binary-reader.service
+  ln -fs ../binary-reader.service /usr/lib/systemd/system/sysinit.target.wants/
 elif [ "$1" = "initrd" ]; then
   systemctl disable binary-reader.service
   dracut -f
