@@ -12,6 +12,15 @@ if rpm -Uvh "$rpm_to_install"; then
   echo "$rpmbuild_output"
 fi
 
-gcc -O3 read.c -o /usr/bin/binary-reader
-initoverlayfs-install -f $1
+if [ "$1" = "rootfs" ]; then
+  head -c $2 /dev/urandom > /usr/bin/binary
+  cp binary-reader.service /usr/lib/systemd/system/
+  gcc -O3 read.c -o /usr/bin/binary-reader
+  systemctl enable binary-reader.service
+elif [ "$1" = "initrd" ]; then
+  systemctl disable binary-reader.service
+  dracut -f
+elif [ "$1" = "initoverlayfs" ]; then
+  initoverlayfs-install -f --initoverlayfs-init
+fi
 
