@@ -18,7 +18,9 @@ if [ "$1" = "rootfs" ]; then
   gcc -O3 read.c -o /usr/bin/binary-reader
   ln -fs ../binary-reader.service /usr/lib/systemd/system/sysinit.target.wants/
 elif [ "$1" = "initrd" ]; then
-  systemctl disable binary-reader.service
+  rm -f /usr/lib/systemd/system/sysinit.target.wants/binary-reader.service
+  mkdir -p /usr/lib/dracut/modules.d/81early-service/
+  cp lib/dracut/modules.d/81early-service/module-setup.sh /usr/lib/dracut/modules.d/81early-service/
   dracut -f
 elif [ "$1" = "initoverlayfs" ]; then
   initoverlayfs-install -f --initoverlayfs-init
