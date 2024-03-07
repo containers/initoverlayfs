@@ -11,6 +11,7 @@ depends() {
 
 install() {
     inst_multiple -o /etc/initoverlayfs.conf /usr/sbin/initoverlayfs \
+      "/etc/initoverlayfs-hash-$kernel.img" \
       "$systemdsystemunitdir/pre-initoverlayfs.target" \
       "$systemdsystemunitdir/pre-initoverlayfs.service" \
       "$systemdsystemunitdir/pre-initoverlayfs-switch-root.service"
