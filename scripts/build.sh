@@ -77,6 +77,8 @@ install() {
     inst_multiple -o \
       "$systemdsystemunitdir"/mount-sysroot.service \
       "$systemdsystemunitdir"/sysinit.target.wants/mount-sysroot.service
+
+    inst_simple "/usr/local/etc/initoverlayfs.conf" "/etc/initoverlayfs.conf"
 }
 EOF
 
