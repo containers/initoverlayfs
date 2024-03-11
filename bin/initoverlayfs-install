@@ -119,12 +119,18 @@ extract_initrd_into_initoverlayfs() {
 # main()
 
 args="$*"
+initoverlayfs_init="false"
 while [[ $# -gt 0 ]]; do
   echo "$1"
   case $1 in
     --kver)
       kver="$2"
       shift 2
+      ;;
+    --initoverlayfs-init)
+      initoverlayfs_init="true"
+      args=$(echo "$args" | sed "s/--initoverlayfs-init//g")
+      shift 1
       ;;
     *)
       shift 1
@@ -149,11 +155,16 @@ detect_path_initramfs
 if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CONF"; then
   boot_partition=$(< /etc/fstab grep "${INITRAMFS_DIR}.*ext4" | awk '{print $1}')
 
-  printf "%s\n%s\n%s\n%s\n" \
+  printf "%s\n%s\n%s\n%s" \
          "bootfs $boot_partition" \
          "bootfstype ext4" \
-         "initoverlayfs_builder dracut -M -o \"initoverlayfs fcoe\"" \
-         "initrd_builder dracut -M -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" > $INITOVERLAYFS_CONF
+         "initoverlayfs_builder dracut -M -o \"initoverlayfs fcoe\"" > $INITOVERLAYFS_CONF
+
+  if $initoverlayfs_init; then
+    printf "%s\n" "initrd_builder dracut -M -m \"initoverlayfs\" -o \"kernel-modules udev-rules systemd base bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" >> $INITOVERLAYFS_CONF
+  else
+    printf "%s\n" "initrd_builder dracut -M -m \"kernel-modules udev-rules initoverlayfs systemd base\" -o \"bash systemd-initrd i18n kernel-modules-extra rootfs-block dracut-systemd usrmount fs-lib microcode_ctl-fw_dir_override shutdown nss-softokn\"" >> $INITOVERLAYFS_CONF
+  fi
 
   erofs_compression_supported="true"
   # shellcheck disable=SC2034
@@ -166,6 +177,10 @@ if ! [ -e "$INITOVERLAYFS_CONF" ] || ! grep -q '[^[:space:]]' "$INITOVERLAYFS_CO
       fi
     fi
   done
+
+  if $initoverlayfs_init; then
+    printf "%s\n" "initoverlayfs_init true" >> $INITOVERLAYFS_CONF
+  fi
 
   if $erofs_compression_supported; then
     printf "%s\n" "erofs_compression -zlz4hc,11" >> $INITOVERLAYFS_CONF
