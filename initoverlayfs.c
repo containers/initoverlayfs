@@ -216,17 +216,22 @@ static bool convert_bootfs(conf* c, const bool systemd) {
 
     // Open the cache
     if (blkid_get_cache(&cache, read))
-      print("blkid_get_cache(%p, \"%s\")\n", &cache, read ? read : NULL);
-
-    if (blkid_probe_all(cache))
-      print("blkid_probe_all(%p)\n", &cache);
+      print("blkid_get_cache(?, \"%s\")\n", read ? read : "NULL");
 
     const char* type = strtok(c->bootfs.val->c_str, "=");
     const char* value = strtok(NULL, "=");
+    if (c->bootfs_hint.val->c_str && c->bootfs_hint.val->c_str[0] &&
+        !strcmp(value,
+                blkid_get_tag_value(cache, type, c->bootfs_hint.val->c_str))) {
+      bootfs_tmp = strdup(c->bootfs_hint.val->c_str);
+    } else {
+      if (blkid_probe_all(cache))
+        print("blkid_probe_all()\n");
 
-    const blkid_dev b_dev = blkid_find_dev_with_tag(cache, type, value);
-    if (asprintf(&bootfs_tmp, "%s", blkid_dev_devname(b_dev)) < 0)
-      return false;
+      const blkid_dev b_dev = blkid_find_dev_with_tag(cache, type, value);
+      if (asprintf(&bootfs_tmp, "%s", blkid_dev_devname(b_dev)) < 0)
+        return false;
+    }
 
     blkid_put_cache(cache);
   }
@@ -577,7 +582,7 @@ int main(int argc, char* argv[]) {
   if (!systemd) {
     mount_proc_sys_dev();
     log_open_kmsg();
-    kmsg_f = kmsg_f_scoped;
+    kmsg_f_scoped = kmsg_f;
   }
 
   pid_t loop_pid = 0;
@@ -585,8 +590,11 @@ int main(int argc, char* argv[]) {
     fork_execl_no_wait(loop_pid, "/usr/sbin/modprobe", "loop");
   }
 
-  autofree_conf conf conf = {
-      .bootfs = {0, 0}, .bootfstype = {0, 0}, .fs = {0, 0}, .fstype = {0, 0}};
+  autofree_conf conf conf = {.bootfs = {0, 0},
+                             .bootfs_hint = {0, 0},
+                             .bootfstype = {0, 0},
+                             .fs = {0, 0},
+                             .fstype = {0, 0}};
   if (conf_construct(&conf))
     return 0;
 

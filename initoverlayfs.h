@@ -60,6 +60,7 @@ typedef struct pair {
 
 typedef struct conf {
   pair bootfs;
+  pair bootfs_hint;
   pair bootfstype;
   pair fs;
   pair fstype;
@@ -68,6 +69,8 @@ typedef struct conf {
 static inline void cleanup_free_conf(conf* p) {
   if (p->bootfs.scoped)
     free(p->bootfs.scoped->c_str);
+  if (p->bootfs_hint.scoped)
+    free(p->bootfs_hint.scoped->c_str);
   if (p->bootfstype.scoped)
     free(p->bootfstype.scoped->c_str);
   if (p->fs.scoped)
@@ -76,10 +79,12 @@ static inline void cleanup_free_conf(conf* p) {
     free(p->fstype.scoped->c_str);
 
   free(p->bootfs.scoped);
+  free(p->bootfs_hint.scoped);
   free(p->bootfstype.scoped);
   free(p->fs.scoped);
   free(p->fstype.scoped);
   free(p->bootfs.val);
+  free(p->bootfs_hint.val);
   free(p->bootfstype.val);
   free(p->fs.val);
   free(p->fstype.val);

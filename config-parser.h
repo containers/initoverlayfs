@@ -6,13 +6,16 @@ static inline bool is_line_key(const str* line, const str* key) {
 static inline int conf_construct(conf* c) {
   c->bootfs.val = (str*)calloc(1, sizeof(str));
   c->bootfs.scoped = (str*)calloc(1, sizeof(str));
+  c->bootfs_hint.val = (str*)calloc(1, sizeof(str));
+  c->bootfs_hint.scoped = (str*)calloc(1, sizeof(str));
   c->bootfstype.val = (str*)calloc(1, sizeof(str));
   c->bootfstype.scoped = (str*)calloc(1, sizeof(str));
   c->fs.val = (str*)calloc(1, sizeof(str));
   c->fs.scoped = (str*)calloc(1, sizeof(str));
   c->fstype.val = (str*)calloc(1, sizeof(str));
   c->fstype.scoped = (str*)calloc(1, sizeof(str));
-  return !c->bootfs.val || !c->bootfs.scoped || !c->bootfstype.val ||
+  return !c->bootfs.val || !c->bootfs.scoped || !c->bootfs_hint.val ||
+         !c->bootfs_hint.scoped || !c->bootfstype.val ||
          !c->bootfstype.scoped || !c->fs.val || !c->fs.scoped ||
          !c->fstype.val || !c->fstype.scoped;
 }
@@ -32,6 +35,8 @@ static inline void set_conf(pair* conf, str** line, const size_t key_len) {
 
 static inline void conf_set_pick(conf* c, str** line) {
   const str bootfs_str = {.c_str = "bootfs", .len = sizeof("bootfs") - 1};
+  const str bootfs_hint_str = {.c_str = "bootfs_hint",
+                               .len = sizeof("bootfs_hint") - 1};
   const str bootfstype_str = {.c_str = "bootfstype",
                               .len = sizeof("bootfstype") - 1};
   const str fs_str = {.c_str = "fs", .len = sizeof("fs") - 1};
@@ -39,6 +44,8 @@ static inline void conf_set_pick(conf* c, str** line) {
 
   if (is_line_key(*line, &bootfs_str))
     set_conf(&c->bootfs, line, bootfs_str.len);
+  else if (is_line_key(*line, &bootfs_hint_str))
+    set_conf(&c->bootfs_hint, line, bootfs_hint_str.len);
   else if (is_line_key(*line, &bootfstype_str))
     set_conf(&c->bootfstype, line, bootfstype_str.len);
   else if (is_line_key(*line, &fs_str))
@@ -50,9 +57,11 @@ static inline void conf_set_pick(conf* c, str** line) {
 static inline conf* conf_print(conf* c) {
 #ifdef DEBUG
   printd(
-      "bootfs: {\"%s\", \"%s\"}, bootfstype: {\"%s\", \"%s\"}, fs: {\"%s\", "
+      "bootfs: {\"%s\", \"%s\"}, bootfs_hint: {\"%s\", \"%s\"}, bootfstype: "
+      "{\"%s\", \"%s\"}, fs: {\"%s\", "
       "\"%s\"}, fstype: {\"%s\", \"%s\"}\n",
-      c->bootfs.val->c_str, c->bootfs.scoped->c_str, c->bootfstype.val->c_str,
+      c->bootfs.val->c_str, c->bootfs.scoped->c_str, c->bootfs_hint.val->c_str,
+      c->bootfs_hint.scoped->c_str, c->bootfstype.val->c_str,
       c->bootfstype.scoped->c_str, c->fs.val->c_str, c->fs.scoped->c_str,
       c->fstype.val->c_str, c->fstype.scoped->c_str);
 #endif
