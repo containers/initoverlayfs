@@ -6,7 +6,7 @@ set -ex
 CAT="lz4cat"
 
 INITRAMFS_DIR=""
-INITOVERLAYFS_CONF="/etc/initoverlayfs.conf"
+INITOVERLAYFS_CONF="/usr/local/etc/initoverlayfs.conf"
 INITRAMFS_DUMP_DIR="/var/lib/initoverlayfs"
 
 # Only erofs-based initoverlayfs supported, ext4, btrfs, xfs, etc. to be implemented"
