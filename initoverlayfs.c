@@ -21,6 +21,14 @@
 #include <sys/utsname.h>
 #include <sys/vfs.h>
 #include <sys/wait.h>
+
+#ifdef SCSI_PROBE
+#define CMDLINE "/proc/cmdline"
+#define SCSI_SYS_TMPL "/sys/class/scsi_host/host%d/scan"
+#define SCSI_SYS_TMPL_SZ 40
+#include "scsi_probe/scsi_probe.h"
+#include <errno.h>
+#endif
 #include "config-parser.h"
 
 #define fork_execl_no_wait(pid, exe, ...)      \
@@ -518,7 +526,7 @@ static int switchroot(const char* newroot) {
 }
 
 static int mount_proc_sys_dev(void) {
-  if (false) {
+  if (true) {
     if (mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV,
               NULL)) {
       print(
@@ -599,6 +607,24 @@ int main(int argc, char* argv[]) {
     return 0;
 
   conf_read(&conf, "/etc/initoverlayfs.conf");
+#ifdef SCSI_PROBE
+  struct args ba;
+  char cmdline[50];
+  FILE *file;
+
+  file = fopen(CMDLINE, "r");
+  if (file != NULL) {
+    if (fgets(cmdline, sizeof(cmdline), file)) {
+      char *kcmdline = fetch_kernel_cmdline(CMDLINE);
+      conf_print(&conf);
+      parse_kernel_cmdline(kcmdline, &ba);
+      update_scsi_args(conf.scsi_dev.scoped->c_str, &ba);
+      trigger_scan(&ba, SCSI_SYS_TMPL, SCSI_SYS_TMPL_SZ);
+    }
+  fclose(file);
+  }
+#endif
+
   const bool do_bootfs = convert_bootfs(&conf, systemd);
   convert_fs(&conf);
   if (systemd)

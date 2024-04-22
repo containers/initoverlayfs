@@ -64,6 +64,9 @@ typedef struct conf {
   pair bootfstype;
   pair fs;
   pair fstype;
+#ifdef SCSI_PROBE
+  pair scsi_dev;
+#endif
 } conf;
 
 static inline void cleanup_free_conf(conf* p) {
@@ -77,7 +80,12 @@ static inline void cleanup_free_conf(conf* p) {
     free(p->fs.scoped->c_str);
   if (p->fstype.scoped)
     free(p->fstype.scoped->c_str);
-
+#ifdef SCSI_PROBE
+  if (p->scsi_dev.scoped)
+    free(p->scsi_dev.scoped->c_str);
+  free(p->scsi_dev.scoped);
+  free(p->scsi_dev.val);
+#endif
   free(p->bootfs.scoped);
   free(p->bootfs_hint.scoped);
   free(p->bootfstype.scoped);
