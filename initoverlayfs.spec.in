@@ -23,7 +23,7 @@ Requires: dracut
 
 %build
 RPM_OPT_FLAGS="${RPM_OPT_FLAGS/-flto=auto /}"
-gcc ${RPM_OPT_FLAGS} -lblkid initoverlayfs.c -o initoverlayfs
+gcc ${RPM_OPT_FLAGS} -lblkid initoverlayfs.c scsi_probe/scsi_probe.c -o initoverlayfs
 
 %install
 install -D -m755 bin/initoverlayfs-install ${RPM_BUILD_ROOT}/%{_bindir}/initoverlayfs-install

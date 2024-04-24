@@ -14,6 +14,10 @@ static inline int conf_construct(conf* c) {
   c->fs.scoped = (str*)calloc(1, sizeof(str));
   c->fstype.val = (str*)calloc(1, sizeof(str));
   c->fstype.scoped = (str*)calloc(1, sizeof(str));
+#ifdef SCSI_PROBE
+  c->scsi_dev.val = (str*)calloc(1, sizeof(str));
+  c->scsi_dev.scoped = (str*)calloc(1, sizeof(str));
+#endif
   return !c->bootfs.val || !c->bootfs.scoped || !c->bootfs_hint.val ||
          !c->bootfs_hint.scoped || !c->bootfstype.val ||
          !c->bootfstype.scoped || !c->fs.val || !c->fs.scoped ||
@@ -41,6 +45,9 @@ static inline void conf_set_pick(conf* c, str** line) {
                               .len = sizeof("bootfstype") - 1};
   const str fs_str = {.c_str = "fs", .len = sizeof("fs") - 1};
   const str fstype_str = {.c_str = "fstype", .len = sizeof("fstype") - 1};
+#ifdef SCSI_PROBE
+  const str devtoscan_str = {.c_str = SCSI_ADDR_BOOT_ARG, .len = sizeof(SCSI_ADDR_BOOT_ARG) - 1};
+#endif
 
   if (is_line_key(*line, &bootfs_str))
     set_conf(&c->bootfs, line, bootfs_str.len);
@@ -52,6 +59,12 @@ static inline void conf_set_pick(conf* c, str** line) {
     set_conf(&c->fs, line, fs_str.len);
   else if (is_line_key(*line, &fstype_str))
     set_conf(&c->fstype, line, fstype_str.len);
+#ifdef SCSI_PROBE
+  else if (is_line_key(*line, &devtoscan_str)){
+    (*line)->c_str[devtoscan_str.len]='=';
+    set_conf(&c->scsi_dev, line, devtoscan_str.len);
+ }
+#endif
 }
 
 static inline conf* conf_print(conf* c) {
@@ -59,11 +72,19 @@ static inline conf* conf_print(conf* c) {
   printd(
       "bootfs: {\"%s\", \"%s\"}, bootfs_hint: {\"%s\", \"%s\"}, bootfstype: "
       "{\"%s\", \"%s\"}, fs: {\"%s\", "
-      "\"%s\"}, fstype: {\"%s\", \"%s\"}\n",
+      "\"%s\"}, fstype: {\"%s\", \"%s\"}"
+#ifdef SCSI_PROBE
+      ", scsi_dev: {\"%s\", \"%s\"}"
+#endif
+      "\n",
       c->bootfs.val->c_str, c->bootfs.scoped->c_str, c->bootfs_hint.val->c_str,
       c->bootfs_hint.scoped->c_str, c->bootfstype.val->c_str,
       c->bootfstype.scoped->c_str, c->fs.val->c_str, c->fs.scoped->c_str,
-      c->fstype.val->c_str, c->fstype.scoped->c_str);
+      c->fstype.val->c_str, c->fstype.scoped->c_str
+#ifdef SCSI_PROBE
+      , c->scsi_dev.val->c_str, c->scsi_dev.scoped->c_str
+#endif
+      );
 #endif
   return c;
 }
