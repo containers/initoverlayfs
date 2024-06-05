@@ -4,7 +4,7 @@ A scalable solution for initial filesystems focused on minimal resource usage, s
 
 - [What is initoverlayfs?](#what-is-initoverlayfs)
 - [Why use initoverlayfs?](#why-use-initoverlayfs)
-- [Dependancies](#dependancies)
+- [Dependencies](#dependencies)
 - [Installation](#installation)
 	* [Step 1 - Deploy the software](#step-1---deploy-the-software)
 	* [Step 2 - Run initoverlayfs-install](#step-2---run-initoverlayfs-install)
@@ -76,13 +76,13 @@ This is a graphic comparing the systemd start time using initramfs only vs using
 
 ![image](https://github.com/containers/initoverlayfs/assets/1694275/f18db634-1c51-4ff7-9c68-423abee0fce4)
 
-# Dependancies
+# Dependencies
 
 - EROFS - Initoverlayfs uses erofs as the underlying filesystem.
 - dracut - As the initramfs and initoverlayfs composing tool.
 - systemd - As the init system.
 
-Note: none of the above dependancies are strictly needed, all the tools could be swapped out for other similar tools.
+Note: none of the above dependencies are strictly needed, all the tools could be swapped out for other similar tools.
 
 # Installation
 
